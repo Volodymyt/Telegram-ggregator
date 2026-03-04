@@ -7,8 +7,8 @@ services:
     env_file:
       - .env
     volumes:
-      - ./app:/code/app
-      - ./data:/code/data
+      - ./src:/code/src
+      - ./data:/var/lib/app
     depends_on:
       postgres:
         condition: service_healthy
