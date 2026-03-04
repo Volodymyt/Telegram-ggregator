@@ -5,4 +5,7 @@ WORKDIR /code
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "-m", "app"]
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/code/src
+
+CMD ["python", "-m", "my_project"]
