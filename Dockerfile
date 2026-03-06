@@ -1,11 +1,11 @@
 FROM python:3.12-slim
 
-WORKDIR /code
+WORKDIR /var/app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/code/src
+ENV PYTHONPATH=/var/app/src
 
-CMD ["python", "-m", "my_project"]
+CMD ["python", "-m", "Telegram-aggregator"]
