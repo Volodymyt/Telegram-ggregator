@@ -6,9 +6,10 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    secrets:
+      - session
     volumes:
-      - ./src:/code/src
-      - app_data:/var/lib/app
+      - ./:/var/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -28,4 +29,7 @@ services:
 
 volumes:
   postgres_data:
-  app_data:
+
+secrets:
+  session:
+    file: ./session.session
