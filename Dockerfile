@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/var/app/src
 
-CMD ["python", "-m", "Telegram-aggregator"]
+CMD ["python", "-m", "telegram_aggregator"]
