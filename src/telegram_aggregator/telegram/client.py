@@ -58,16 +58,16 @@ def _to_message_info(msg: Message, channel_tg_id: int) -> MessageInfo:
 
 MessageCallback = Callable[[MessageInfo], Awaitable[None]]
 
-class TelegramAggregatorClient:
+class TelegramClient:
     def __init__(self) -> None:
-        self._client = TelegramClient(
-            session=config.tg_session_path,
-            api_id=config.tg_api_id,
-            api_hash=config.tg_api_hash,
+        self._client = telethon.TelegramClient(
+            session=config.tg.tg_session_path,
+            api_id=config.tg.tg_api_id,
+            api_hash=config.tg.tg_api_hash,
         )
         self._handlers: list[Callable] = []
 
-    async def __aenter__(self) -> TelegramAggregatorClient:
+    async def __aenter__(self) -> TelegramClient:
         await self._client.start(phone=config.tg_phone)
         return self
 
