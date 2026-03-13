@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly SCRIPT_PATH="${BASH_SOURCE[0]}"
+readonly SCRIPT_DIR="$(cd -- "${SCRIPT_PATH%/*}" && pwd)"
+readonly REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+readonly ROLES_DIR="${REPO_ROOT}/docs/roles"
+readonly VALID_ROLES=("engineer" "tech-lead" "product-owner")
+
+usage() {
+  cat <<'EOF'
+Usage:
+  bin/codex-role <role> [task words...] [-- <raw codex args...>]
+
+Roles:
+  engineer
+  tech-lead
+  product-owner
+
+Examples:
+  bin/codex-role tech-lead
+  bin/codex-role engineer fix parser bug
+  bin/codex-role product-owner refine backlog -- --model gpt-5.4
+EOF
+}
+
+fail() {
+  printf 'Error: %s\n' "$1" >&2
+  usage >&2
+  exit 1
+}
+
+is_valid_role() {
+  local candidate=$1
+  local valid_role
+
+  for valid_role in "${VALID_ROLES[@]}"; do
+    if [[ "${valid_role}" == "${candidate}" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+if (($# == 0)); then
+  fail "missing role"
+fi
+
+case "${1}" in
+  -h|--help)
+    usage
+    exit 0
+    ;;
+esac
+
+if ! command -v codex >/dev/null 2>&1; then
+  printf 'Error: `codex` was not found in PATH.\n' >&2
+  exit 1
+fi
+
+role=$1
+shift
+
+if ! is_valid_role "${role}"; then
+  fail "unknown role: ${role}"
+fi
+
+role_file="${ROLES_DIR}/${role}.md"
+if [[ ! -f "${role_file}" ]]; then
+  printf 'Error: expected role file not found: %s\n' "${role_file}" >&2
+  exit 1
+fi
+
+task_words=()
+codex_args=()
+parsing_codex_args=false
+
+while (($# > 0)); do
+  if [[ "$1" == "--" ]]; then
+    parsing_codex_args=true
+    shift
+    continue
+  fi
+
+  if [[ "${parsing_codex_args}" == true ]]; then
+    codex_args+=("$1")
+  else
+    task_words+=("$1")
+  fi
+  shift
+done
+
+prompt="Open docs/roles/${role}.md and work strictly within that role."
+if ((${#task_words[@]} > 0)); then
+  task_text="${task_words[*]}"
+  prompt="${prompt} Task: ${task_text}"
+fi
+
+cmd=(codex -C "${REPO_ROOT}")
+if ((${#codex_args[@]} > 0)); then
+  cmd+=("${codex_args[@]}")
+fi
+cmd+=("${prompt}")
+
+exec "${cmd[@]}"
