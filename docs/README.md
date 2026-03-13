@@ -20,7 +20,8 @@ This directory is the entry point for internal project documentation.
 
 - Start with [`project/overview.md`](project/overview.md) for product intent and current repository context.
 - Use [`project/requirements.md`](project/requirements.md) as the canonical MVP specification.
-- Use [`project/architecture.md`](project/architecture.md) for target system structure and operational constraints.
+- Use [`project/architecture.md`](project/architecture.md) for the short target architecture overview.
+- Use [`project/architecture-spec.md`](project/architecture-spec.md) for the implementation-oriented component design.
 - Use [`adr/README.md`](adr/README.md) for durable architecture and process decisions.
 
 ## Writing Guidelines

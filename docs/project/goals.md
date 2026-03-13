@@ -15,6 +15,7 @@
 ## Technical Quality Goals
 
 - Persist repost state so duplicate messages are not published after restart.
+- Persist source messages, candidate state, and logical event state so work can resume safely after restart.
 - Operate reliably against Telegram disconnects and flood-wait conditions.
 - Remain lightweight enough for a small VPS deployment target.
 
@@ -23,7 +24,8 @@
 - Listening to source channels and chats.
 - Filtering by include and exclude rules.
 - Publishing to one target channel.
-- Deduplication backed by SQLite.
+- Message, candidate, and event-state persistence backed by Postgres.
+- In-process processing, candidate, and publish queues.
 - Containerized delivery with `Dockerfile` and a basic Compose example.
 - Minimal administration, logging, and health monitoring.
 
@@ -33,7 +35,7 @@
 - ML-based classification or semantic search.
 - Multiple target channels.
 - Moderation workflow with approval queue.
-- Postgres or Redis as a required dependency for the first release.
+- Redis or another external broker for the first release.
 
 ## Success Criteria
 
