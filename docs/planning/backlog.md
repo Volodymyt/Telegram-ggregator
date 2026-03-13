@@ -26,5 +26,5 @@ Use a compact format for each backlog item:
 ## Maintenance Rule
 
 - Keep the list prioritized from top to bottom.
-- Move active execution plans into `active/`.
-- Move completed or superseded work into `archive/`.
+- Move active execution plans into [`active/`](active/README.md).
+- Move completed or superseded work into [`archive/`](archive/README.md).

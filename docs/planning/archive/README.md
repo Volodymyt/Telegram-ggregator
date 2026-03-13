@@ -6,4 +6,4 @@ Store completed, cancelled, or superseded planning documents in this directory.
 
 - Preserve the original plan content.
 - Add a short note at the top if the plan was cancelled or replaced.
-- Keep filenames stable when moving documents from `active/`.
+- Keep filenames stable when moving documents from [`active/`](../active/README.md).
