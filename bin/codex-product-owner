@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly SCRIPT_PATH="${BASH_SOURCE[0]}"
+readonly SCRIPT_DIR="$(cd -- "${SCRIPT_PATH%/*}" && pwd)"
+
+exec "${SCRIPT_DIR}/codex-role" product-owner "$@"
