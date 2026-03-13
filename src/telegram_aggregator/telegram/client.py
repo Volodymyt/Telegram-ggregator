@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import timezone
 from typing import Callable, Awaitable
 
+import telethon
 from telethon import TelegramClient, events
 from telethon.tl.types import Channel, Message, MessageMediaDocument, MessageMediaPhoto
 
@@ -68,7 +69,7 @@ class TelegramClient:
         self._handlers: list[Callable] = []
 
     async def __aenter__(self) -> TelegramClient:
-        await self._client.start(phone=config.tg_phone)
+        await self._client.start(phone=config.tg.tg_phone)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
