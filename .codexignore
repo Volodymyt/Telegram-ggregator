@@ -1,1 +1,4 @@
 docs_ua/
+docs_ua/**
+./docs_ua
+./docs_ua/**

@@ -15,3 +15,5 @@ Language policy:
 - Address the user in Ukrainian by default.
 - If the user explicitly asks for another language, use that language for user-facing replies.
 - Do not mix languages within the same sentence.
+
+DO NOT USE directories and files from directories provided in .codexignore! 
