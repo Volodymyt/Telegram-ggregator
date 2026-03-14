@@ -43,7 +43,7 @@ Lock the operator-facing startup contract so configuration, validation, and logi
 
 ## Links
 
-- Parent epic: [2026-03-14-epic-m0-foundations-ready.md](2026-03-14-epic-m0-foundations-ready.md)
-- Parent plan: [2026-03-14-mvp-delivery-plan.md](2026-03-14-mvp-delivery-plan.md)
-- Requirements: [../../project/requirements.md](../../project/requirements.md)
-- Architecture spec: [../../project/architecture-spec.md](../../project/architecture-spec.md)
+- Parent epic: [M0 Foundations Ready](../epic.md)
+- Parent plan: [MVP Delivery Plan](../../2026-03-14-mvp-delivery-plan.md)
+- Requirements: [Requirements](../../../../project/requirements.md)
+- Architecture spec: [Architecture spec](../../../../project/architecture-spec.md)

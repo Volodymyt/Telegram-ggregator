@@ -17,7 +17,7 @@ Define the minimum stable persistence boundary that later reader, processing, ag
 
 ## Dependencies
 
-- [2026-03-14-task-m0-storage-bootstrap-schema-baseline.md](2026-03-14-task-m0-storage-bootstrap-schema-baseline.md)
+- [02_schema_baseline.md](02_schema_baseline.md)
 
 ## Steps
 
@@ -40,8 +40,8 @@ Define the minimum stable persistence boundary that later reader, processing, ag
 
 ## Links
 
-- Parent epic: [2026-03-14-epic-m0-foundations-ready.md](2026-03-14-epic-m0-foundations-ready.md)
-- Parent story: [2026-03-14-story-m0-storage-bootstrap.md](2026-03-14-story-m0-storage-bootstrap.md)
-- Depends on task: [2026-03-14-task-m0-storage-bootstrap-schema-baseline.md](2026-03-14-task-m0-storage-bootstrap-schema-baseline.md)
-- Parent plan: [2026-03-14-mvp-delivery-plan.md](2026-03-14-mvp-delivery-plan.md)
-- Architecture spec: [../../project/architecture-spec.md](../../project/architecture-spec.md)
+- Parent epic: [M0 Foundations Ready](../../epic.md)
+- Parent story: [M0 Storage bootstrap](../story.md)
+- Depends on task: [02_schema_baseline.md](02_schema_baseline.md)
+- Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
+- Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)

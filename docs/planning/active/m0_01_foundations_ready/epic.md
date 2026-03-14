@@ -26,10 +26,10 @@ Establish the executable MVP baseline so later slices can add intake, aggregatio
 
 ## Story Map
 
-1. [M0 Runtime and package contract](2026-03-14-story-m0-runtime-package-contract.md)
-2. [M0 Config and login contract](2026-03-14-story-m0-config-login-contract.md)
-3. [M0 Storage bootstrap](2026-03-14-story-m0-storage-bootstrap.md)
-4. [M0 Bootstrap, observability, and test harness](2026-03-14-story-m0-bootstrap-observability-test-harness.md)
+1. [M0 Runtime and package contract](01_runtime_package_contract/story.md)
+2. [M0 Config and login contract](02_config_login_contract/story.md)
+3. [M0 Storage bootstrap](03_storage_bootstrap/story.md)
+4. [M0 Bootstrap, observability, and test harness](04_bootstrap_observability_test_harness/story.md)
 
 ## Steps
 
@@ -59,6 +59,6 @@ Establish the executable MVP baseline so later slices can add intake, aggregatio
 
 ## Links
 
-- Parent plan: [2026-03-14-mvp-delivery-plan.md](2026-03-14-mvp-delivery-plan.md)
-- Requirements: [../../project/requirements.md](../../project/requirements.md)
-- Architecture spec: [../../project/architecture-spec.md](../../project/architecture-spec.md)
+- Parent plan: [MVP Delivery Plan](../2026-03-14-mvp-delivery-plan.md)
+- Requirements: [Requirements](../../../project/requirements.md)
+- Architecture spec: [Architecture spec](../../../project/architecture-spec.md)

@@ -27,24 +27,24 @@ Establish PostgreSQL as the executable durable-state baseline so later slices ca
 
 ## Task Breakdown
 
-1. [M0 Storage bootstrap: storage surface and Alembic scaffold](2026-03-14-task-m0-storage-bootstrap-storage-surface-alembic.md)
+1. [M0 Storage bootstrap: storage surface and Alembic scaffold](tasks/01_storage_surface_alembic.md)
    Lock the canonical storage package surface and Alembic scaffold on top of the already fixed runtime and config contracts.
-2. [M0 Storage bootstrap: schema baseline for message and event records](2026-03-14-task-m0-storage-bootstrap-schema-baseline.md)
+2. [M0 Storage bootstrap: schema baseline for message and event records](tasks/02_schema_baseline.md)
    Define the baseline SQLAlchemy Core schema and the first Alembic revision for `message_records` and `event_records`.
-3. [M0 Storage bootstrap: repository boundary and persistence primitives](2026-03-14-task-m0-storage-bootstrap-repository-boundary.md)
+3. [M0 Storage bootstrap: repository boundary and persistence primitives](tasks/03_repository_boundary.md)
    Establish the minimum stable repository contract for message and event persistence on the baseline schema.
-4. [M0 Storage bootstrap: startup readiness and migration hooks](2026-03-14-task-m0-storage-bootstrap-startup-readiness-hooks.md)
+4. [M0 Storage bootstrap: startup readiness and migration hooks](tasks/04_startup_readiness_hooks.md)
    Add one storage initialization path that proves database reachability and migration health before workers start.
-5. [M0 Storage bootstrap: verification coverage](2026-03-14-task-m0-storage-bootstrap-verification-coverage.md)
+5. [M0 Storage bootstrap: verification coverage](tasks/05_verification_coverage.md)
    Protect the storage bootstrap contract with automated coverage for migrations, readiness, and baseline persistence primitives.
 
 ## Execution Sequence
 
-1. Start with [2026-03-14-task-m0-storage-bootstrap-storage-surface-alembic.md](2026-03-14-task-m0-storage-bootstrap-storage-surface-alembic.md), because every other storage task depends on the canonical package surface and Alembic scaffold.
-2. Continue with [2026-03-14-task-m0-storage-bootstrap-schema-baseline.md](2026-03-14-task-m0-storage-bootstrap-schema-baseline.md), because the schema and first revision are the durable contract for all later storage work.
-3. Then implement [2026-03-14-task-m0-storage-bootstrap-repository-boundary.md](2026-03-14-task-m0-storage-bootstrap-repository-boundary.md), because repository primitives must target the real baseline tables and constraints.
-4. After that implement [2026-03-14-task-m0-storage-bootstrap-startup-readiness-hooks.md](2026-03-14-task-m0-storage-bootstrap-startup-readiness-hooks.md), because startup wiring must consume the same engine and migration contract rather than temporary bootstrap code.
-5. Finish with [2026-03-14-task-m0-storage-bootstrap-verification-coverage.md](2026-03-14-task-m0-storage-bootstrap-verification-coverage.md), after the schema, repository, and readiness contracts are stable enough to verify together.
+1. Start with [01_storage_surface_alembic.md](tasks/01_storage_surface_alembic.md), because every other storage task depends on the canonical package surface and Alembic scaffold.
+2. Continue with [02_schema_baseline.md](tasks/02_schema_baseline.md), because the schema and first revision are the durable contract for all later storage work.
+3. Then implement [03_repository_boundary.md](tasks/03_repository_boundary.md), because repository primitives must target the real baseline tables and constraints.
+4. After that implement [04_startup_readiness_hooks.md](tasks/04_startup_readiness_hooks.md), because startup wiring must consume the same engine and migration contract rather than temporary bootstrap code.
+5. Finish with [05_verification_coverage.md](tasks/05_verification_coverage.md), after the schema, repository, and readiness contracts are stable enough to verify together.
 
 ## Sequencing Notes
 
@@ -69,7 +69,7 @@ Establish PostgreSQL as the executable durable-state baseline so later slices ca
 
 ## Links
 
-- Parent epic: [2026-03-14-epic-m0-foundations-ready.md](2026-03-14-epic-m0-foundations-ready.md)
-- Parent plan: [2026-03-14-mvp-delivery-plan.md](2026-03-14-mvp-delivery-plan.md)
-- Requirements: [../../project/requirements.md](../../project/requirements.md)
-- Architecture spec: [../../project/architecture-spec.md](../../project/architecture-spec.md)
+- Parent epic: [M0 Foundations Ready](../epic.md)
+- Parent plan: [MVP Delivery Plan](../../2026-03-14-mvp-delivery-plan.md)
+- Requirements: [Requirements](../../../../project/requirements.md)
+- Architecture spec: [Architecture spec](../../../../project/architecture-spec.md)

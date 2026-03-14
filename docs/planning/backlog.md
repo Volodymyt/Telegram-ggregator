@@ -22,25 +22,25 @@ Use the hierarchy `epic > story > task` during decomposition.
 
 ## Title Lineage Convention
 
-Encode ancestor relationships directly in the item title by using planning file stems in square brackets.
+Encode ancestor relationships directly in the item title by using planning directory IDs in square brackets.
 
 ```md
 - [Status] Epic title
-- [Status][2026-03-14-epic-example-epic] Story title
-- [Status][2026-03-14-epic-example-epic][2026-03-14-story-example-story] Task title
+- [Status][m0_01_foundations_ready] Story title
+- [Status][m0_01_foundations_ready][03_storage_bootstrap] Task title
 ```
 
-- Use only ancestor file stems, without `.md` or directory names.
+- Use only ancestor directory IDs, without filenames or parent paths.
 - Order bracket segments from the highest ancestor to the nearest ancestor.
-- Do not include the current item's own file stem in its title.
-- If an ancestor does not have its own planning file yet, omit that bracket segment until the file exists.
+- Do not include the current item's own directory ID or task filename in its title.
+- If an ancestor does not have its own planning directory yet, omit that bracket segment until the directory exists.
 
 ## Item Template
 
 Use a compact format for each backlog item:
 
 ```md
-- [Status][ancestor-file-stem-1][ancestor-file-stem-2] Short title
+- [Status][ancestor-dir-id-1][ancestor-dir-id-2] Short title
   - Type: Epic | Story | Task
   - Why it matters:
   - Acceptance signal:
@@ -50,7 +50,7 @@ Use a compact format for each backlog item:
 ## Maintenance Rule
 
 - Keep the list prioritized from top to bottom.
-- Keep title lineage aligned with current planning filenames when linked ancestor files exist.
+- Keep title lineage aligned with current planning directory IDs when linked ancestor planning directories exist.
 - Move active execution plans into [`active/`](active/README.md).
 - Move completed or superseded work into [`archive/`](archive/README.md).
 
@@ -58,7 +58,7 @@ Use a compact format for each backlog item:
 
 These items intentionally omit lineage brackets until separate epic or story planning files exist.
 
-Current active execution focus: [M0 Foundations Ready](active/2026-03-14-epic-m0-foundations-ready.md).
+Current active execution focus: [M0 Foundations Ready](active/m0_01_foundations_ready/epic.md).
 
 ### M1
 

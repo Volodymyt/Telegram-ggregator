@@ -39,7 +39,7 @@ The following constraints are already fixed by the architecture and requirements
 - A repeated matching `start` signal more than 5 minutes after the original event start opens a new event.
 - A `clear` signal closes only an active event of the same `event_type` and is never published.
 - `DRY_RUN` remains a supported operator mode and must suppress Telegram side effects without bypassing intake, filtering, aggregation, or persistence logic.
-- Restart recovery must cover durable work that can be left behind in `candidate`, `selected_for_publish`, or `publishing` state.
+- Restart recovery must cover durable work that can be left behind with `classification_status='candidate' and aggregation_status='queued'`, or `publish_status in ('queued', 'publishing')`.
 
 ## Investigation Findings
 
@@ -80,7 +80,17 @@ These defaults are chosen now to remove ambiguity before backlog decomposition.
 
 - Use PostgreSQL with SQLAlchemy 2.x async engine and SQLAlchemy Core, not ORM models.
 - Use Alembic for schema migrations.
-- Keep persistence centered on `message_records` and `event_records`.
+- Keep persistence centered on `tg_message` and `event`.
+- Apply table naming consistently:
+  - use `snake_case` for all database identifiers;
+  - use singular table names that match the entity semantically;
+  - do not use filler suffixes such as `records`;
+  - prefix tables that store Telegram-origin data with `tg_`.
+- Apply Python naming consistently with PEP 8:
+  - use CapWords for classes, typed structures, and other type-like objects;
+  - use `snake_case` for modules, functions, methods, variables, and non-type identifiers.
+- Model `tg_message` progress with independent status axes instead of one overloaded message status field.
+- For `aggregation_status` and `publish_status`, use `new` when the stage has not yet been scheduled and `queued` when the message is explicitly waiting for worker processing.
 - Use transactional row claiming with `SELECT ... FOR UPDATE SKIP LOCKED` for candidate recovery and processing where row ownership matters.
 
 ### Normalization
@@ -105,10 +115,12 @@ These defaults are chosen now to remove ambiguity before backlog decomposition.
 
 ### Publish Retry and Recovery
 
-- `FloodWaitError` is handled by sleeping for the exact reported duration and retrying the same publication job.
-- Other transient publish failures use persisted retry state with exponential backoff of `5s`, `15s`, `30s`, `60s`, then capped `300s` retries for the MVP.
-- Non-retriable publish failures mark the selected message as `publish_failed` and the owning event as `failed` without further retries.
-- Bootstrap must rebuild publication jobs from Postgres for rows left in `selected_for_publish` or `publishing` before steady-state processing is considered healthy.
+- Publication freshness is limited to `120s` from the first publish attempt.
+- `FloodWaitError` is retriable only when the reported wait fits inside the remaining `120s` freshness window; otherwise the job sets `tg_message.publish_status='failed'` and the error is logged.
+- Other transient publish failures use persisted retry state with exponential backoff of `5s`, `15s`, `30s`, `60s`, but only while the next attempt still fits inside the same `120s` freshness window.
+- Any publication job that cannot complete within `120s` from the first publish attempt sets `tg_message.publish_status='failed'`, logs an error, and stops retrying.
+- Non-retriable publish failures set `tg_message.publish_status='failed'` and the owning event `publish_status='failed'` without further retries.
+- Bootstrap must rebuild publication jobs from Postgres for rows left with `publish_status='queued'` or `publish_status='publishing'` before steady-state processing is considered healthy.
 
 ### Operator Experience and Observability
 
@@ -136,23 +148,30 @@ Future implementation and task decomposition should preserve these internal type
 
 - `CandidateMessage`
 - `EventSignal`
-- `EventRecord`
+- `Event`
 - `PublicationJob`
-- `message_records` statuses:
-  - `received`
+- `tg_message.classification_status`:
+  - `pending`
+  - `outdated`
   - `filtered_out`
   - `candidate`
+- `tg_message.aggregation_status`:
+  - `new`
+  - `queued`
   - `suppressed_duplicate`
-  - `selected_for_publish`
-  - `publishing`
-  - `published`
-  - `publish_failed`
+  - `selected`
   - `clear_processed`
   - `orphan_clear`
-- `event_records.state`:
+- `tg_message.publish_status`:
+  - `new`
+  - `queued`
+  - `publishing`
+  - `published`
+  - `failed`
+- `event.state`:
   - `open`
   - `closed`
-- `event_records.publish_status`:
+- `event.publish_status`:
   - `pending`
   - `published`
   - `failed`
@@ -164,7 +183,7 @@ These items must remain visible during task decomposition even when they do not 
 - M0 must cover config/runtime validation for source and target identifier formats, `LOG_LEVEL`, `DRY_RUN`, queue sizes, YAML toggles, and both login entry paths.
 - M1 must preserve `case_insensitive` and normalization-driven filter behavior from the configuration contract, not only the regex matching core.
 - M2 must keep `DRY_RUN` and attribution behavior testable in the first end-to-end publish slice.
-- M3 must cover restart recovery for `candidate`, `selected_for_publish`, and `publishing` states, not only candidate aggregation recovery.
+- M3 must cover restart recovery for candidate rows waiting aggregation and for publication rows in `queued` or `publishing` states, not only candidate aggregation recovery.
 - M4 must include explicit verification for capacity, latency, runtime security posture, and final operator run instructions.
 
 ## Workstreams
@@ -197,7 +216,7 @@ These items must remain visible during task decomposition even when they do not 
 ### 4. Candidate Aggregation and Event Lifecycle
 
 - Candidate queue consumer.
-- Recovery scan for persisted `candidate` rows.
+- Recovery scan for persisted candidate rows with `classification_status='candidate'` and `aggregation_status='queued'`.
 - Candidate signature generation.
 - Fuzzy matching against open events.
 - Duplicate suppression and event linking.
@@ -209,7 +228,7 @@ These items must remain visible during task decomposition even when they do not 
 - Payload formatting and attribution footer.
 - Telethon target-channel publish adapter.
 - Flood wait handling.
-- Restart-safe recovery of `selected_for_publish` and `publishing` rows.
+- Restart-safe recovery of rows with `publish_status='queued'` and `publish_status='publishing'`.
 - Terminal failure handling and persisted retry state.
 - Copy-forbidden fallback behavior.
 
@@ -243,12 +262,13 @@ Exit criteria:
 ### M1 Intake To Candidate
 
 Outcome:
-- New source messages are read from Telegram, persisted once, normalized, filtered, and marked either `filtered_out` or `candidate`.
+- New source messages are read from Telegram, persisted once, normalized, and marked as `outdated`, `filtered_out`, or `candidate`.
 
 Exit criteria:
 - Source-message deduplication works on `(source_chat_id, source_message_id)`.
 - Filter behavior covers `any` and `all` modes.
 - Filter behavior covers `case_insensitive` and normalization toggles from the YAML contract.
+- Messages already stale before classification are marked `outdated` without filter or candidate processing.
 - Candidate classification persists `event_type`, `event_signal`, and `candidate_signature`.
 - Queue-driven intake and processing operate end-to-end without publication.
 
@@ -260,6 +280,7 @@ Outcome:
 Exit criteria:
 - `first arrival wins` is enforced.
 - Duplicate `start` candidates within the active window become `suppressed_duplicate`.
+- Selected messages move through `tg_message.publish_status='queued'` before the publish worker claims them.
 - Text publication works with attribution.
 - `DRY_RUN` suppresses target-channel writes while preserving the same publish-decision path for verification.
 - The first vertical slice is demoable end-to-end.
@@ -272,9 +293,9 @@ Outcome:
 Exit criteria:
 - Matching `clear` closes an active event and is not published.
 - Unmatched `clear` becomes `orphan_clear`.
-- Restart recovery scans persisted `candidate`, `selected_for_publish`, and `publishing` rows and resumes work without duplicate publishing.
-- Publish status and terminal failures are persisted on both message and event records.
-- Transient publish failures follow the locked backoff policy and keep persisted retry state.
+- Restart recovery scans persisted candidate rows waiting aggregation and publication rows with `publish_status in ('queued', 'publishing')` and resumes work without duplicate publishing.
+- Publish status and terminal failures are persisted on both `tg_message` and `event` rows.
+- Transient publish failures follow the locked backoff policy, stop after `120s` from the first publish attempt, and log terminal timeout failures.
 
 ### M4 MVP Hardening
 
@@ -284,7 +305,7 @@ Outcome:
 Exit criteria:
 - Photo posts with captions are supported.
 - Copy-forbidden fallback behaves deterministically.
-- Flood-wait handling and retry behavior are covered.
+- Flood-wait handling and the `120s` bounded retry window are covered.
 - The service supports at least 100 configured sources on the target deployment profile.
 - Normal end-to-end latency remains within 10 to 30 seconds when flood waits are not active.
 - Runtime guidance covers secrets handling and reduced-privilege container operation.
@@ -294,7 +315,7 @@ Exit criteria:
 ## Dependency Rules For Future Task Decomposition
 
 - Break down work by milestone first, then by workstream.
-- Every future task must map to one primary component owner and one acceptance signal.
+- Every future task must name one primary implementation component and one acceptance signal.
 - Do not create cross-component tasks unless the work is foundational, storage-related, or operational.
 - Candidate aggregation remains the only place allowed to deduplicate candidates, manage event lifecycle, and create publication jobs.
 - Publish behavior remains isolated to the publish worker and publisher adapter.
@@ -310,13 +331,15 @@ The later task backlog must cover the following scenarios explicitly:
 - duplicate source messages are ignored safely;
 - include and exclude filters work in both `any` and `all` modes;
 - normalization changes matching behavior only through the documented pipeline;
+- stale source messages are marked `outdated` before filter evaluation;
 - `DRY_RUN` suppresses target publication without bypassing publish-decision logic;
 - similar `start` messages within 5 minutes map to one event;
 - a repeated `start` after 5 minutes opens a new event;
 - `clear` closes only an active event of the same `event_type`;
-- restart recovery resumes unprocessed `candidate`, `selected_for_publish`, and `publishing` rows safely;
+- restart recovery resumes candidate rows waiting aggregation and publication rows in `queued` or `publishing` states safely;
 - publish failures update persisted state correctly;
-- transient publish retries follow the locked backoff policy;
+- transient publish retries follow the locked backoff policy only within `120s` from the first publish attempt;
+- publish jobs that exceed the `120s` publish freshness window are logged and stored with `tg_message.publish_status='failed'`;
 - text and photo-with-caption flows satisfy the MVP acceptance bar.
 
 ## Out Of Scope For This Plan

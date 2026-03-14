@@ -18,8 +18,8 @@ Lock one canonical storage entrypoint for the MVP so schema, repositories, and b
 
 ## Dependencies
 
-- [2026-03-14-story-m0-runtime-package-contract.md](2026-03-14-story-m0-runtime-package-contract.md)
-- [2026-03-14-story-m0-config-login-contract.md](2026-03-14-story-m0-config-login-contract.md)
+- [M0 Runtime and package contract](../../01_runtime_package_contract/story.md)
+- [M0 Config and login contract](../../02_config_login_contract/story.md)
 
 ## Steps
 
@@ -42,7 +42,7 @@ Lock one canonical storage entrypoint for the MVP so schema, repositories, and b
 
 ## Links
 
-- Parent epic: [2026-03-14-epic-m0-foundations-ready.md](2026-03-14-epic-m0-foundations-ready.md)
-- Parent story: [2026-03-14-story-m0-storage-bootstrap.md](2026-03-14-story-m0-storage-bootstrap.md)
-- Parent plan: [2026-03-14-mvp-delivery-plan.md](2026-03-14-mvp-delivery-plan.md)
-- Architecture spec: [../../project/architecture-spec.md](../../project/architecture-spec.md)
+- Parent epic: [M0 Foundations Ready](../../epic.md)
+- Parent story: [M0 Storage bootstrap](../story.md)
+- Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
+- Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)

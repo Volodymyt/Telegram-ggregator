@@ -17,9 +17,9 @@ Protect the storage bootstrap contract with automated verification so later M0 a
 
 ## Dependencies
 
-- [2026-03-14-task-m0-storage-bootstrap-schema-baseline.md](2026-03-14-task-m0-storage-bootstrap-schema-baseline.md)
-- [2026-03-14-task-m0-storage-bootstrap-repository-boundary.md](2026-03-14-task-m0-storage-bootstrap-repository-boundary.md)
-- [2026-03-14-task-m0-storage-bootstrap-startup-readiness-hooks.md](2026-03-14-task-m0-storage-bootstrap-startup-readiness-hooks.md)
+- [02_schema_baseline.md](02_schema_baseline.md)
+- [03_repository_boundary.md](03_repository_boundary.md)
+- [04_startup_readiness_hooks.md](04_startup_readiness_hooks.md)
 
 ## Steps
 
@@ -42,10 +42,10 @@ Protect the storage bootstrap contract with automated verification so later M0 a
 
 ## Links
 
-- Parent epic: [2026-03-14-epic-m0-foundations-ready.md](2026-03-14-epic-m0-foundations-ready.md)
-- Parent story: [2026-03-14-story-m0-storage-bootstrap.md](2026-03-14-story-m0-storage-bootstrap.md)
-- Depends on task: [2026-03-14-task-m0-storage-bootstrap-schema-baseline.md](2026-03-14-task-m0-storage-bootstrap-schema-baseline.md)
-- Depends on task: [2026-03-14-task-m0-storage-bootstrap-repository-boundary.md](2026-03-14-task-m0-storage-bootstrap-repository-boundary.md)
-- Depends on task: [2026-03-14-task-m0-storage-bootstrap-startup-readiness-hooks.md](2026-03-14-task-m0-storage-bootstrap-startup-readiness-hooks.md)
-- Parent plan: [2026-03-14-mvp-delivery-plan.md](2026-03-14-mvp-delivery-plan.md)
-- Architecture spec: [../../project/architecture-spec.md](../../project/architecture-spec.md)
+- Parent epic: [M0 Foundations Ready](../../epic.md)
+- Parent story: [M0 Storage bootstrap](../story.md)
+- Depends on task: [02_schema_baseline.md](02_schema_baseline.md)
+- Depends on task: [03_repository_boundary.md](03_repository_boundary.md)
+- Depends on task: [04_startup_readiness_hooks.md](04_startup_readiness_hooks.md)
+- Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
+- Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)

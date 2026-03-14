@@ -43,6 +43,6 @@ Establish the canonical runtime and packaging contract under `src/telegram_aggre
 
 ## Links
 
-- Parent epic: [2026-03-14-epic-m0-foundations-ready.md](2026-03-14-epic-m0-foundations-ready.md)
-- Parent plan: [2026-03-14-mvp-delivery-plan.md](2026-03-14-mvp-delivery-plan.md)
-- Architecture spec: [../../project/architecture-spec.md](../../project/architecture-spec.md)
+- Parent epic: [M0 Foundations Ready](../epic.md)
+- Parent plan: [MVP Delivery Plan](../../2026-03-14-mvp-delivery-plan.md)
+- Architecture spec: [Architecture spec](../../../../project/architecture-spec.md)
