@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync Docs UA Translations"
+  short_description: "Sync stale docs_ua translations"
+  default_prompt: "Use $sync-docs-ua-translations to refresh docs_ua from docs by comparing modification times and retranslating only stale files."
