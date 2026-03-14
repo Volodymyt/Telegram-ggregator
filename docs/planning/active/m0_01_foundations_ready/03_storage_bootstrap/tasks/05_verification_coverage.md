@@ -1,7 +1,6 @@
 # M0 Storage bootstrap: verification coverage
 
 Status: Ready
-Owner: TBD
 Last updated: 2026-03-14
 
 ## Goal
@@ -14,12 +13,6 @@ Protect the storage bootstrap contract with automated verification so later M0 a
 - Verify the first repository primitives against the canonical schema, including idempotent source-message persistence.
 - Verify that storage initialization distinguishes connectivity failures from migration failures.
 - Exclude later business workflow tests for candidate recovery, deduplication, and publication behavior.
-
-## Dependencies
-
-- [02_schema_baseline.md](02_schema_baseline.md)
-- [03_repository_boundary.md](03_repository_boundary.md)
-- [04_startup_readiness_hooks.md](04_startup_readiness_hooks.md)
 
 ## Steps
 
@@ -44,8 +37,8 @@ Protect the storage bootstrap contract with automated verification so later M0 a
 
 - Parent epic: [M0 Foundations Ready](../../epic.md)
 - Parent story: [M0 Storage bootstrap](../story.md)
+- Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
+- Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)
 - Depends on task: [02_schema_baseline.md](02_schema_baseline.md)
 - Depends on task: [03_repository_boundary.md](03_repository_boundary.md)
 - Depends on task: [04_startup_readiness_hooks.md](04_startup_readiness_hooks.md)
-- Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
-- Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)

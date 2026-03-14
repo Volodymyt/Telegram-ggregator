@@ -1,7 +1,6 @@
 # M0 Storage bootstrap: storage surface and Alembic scaffold
 
 Status: Ready
-Owner: TBD
 Last updated: 2026-03-14
 
 ## Goal
@@ -15,11 +14,6 @@ Lock one canonical storage entrypoint for the MVP so schema, repositories, and b
 - Wire Alembic to the SQLAlchemy Core metadata owned by the storage package.
 - Reuse the M0 runtime and config contracts for dependency wiring and `DATABASE_URL` access rather than creating a parallel settings path.
 - Exclude schema field design, repository behavior, and full runtime bootstrap wiring.
-
-## Dependencies
-
-- [M0 Runtime and package contract](../../01_runtime_package_contract/story.md)
-- [M0 Config and login contract](../../02_config_login_contract/story.md)
 
 ## Steps
 
@@ -46,3 +40,5 @@ Lock one canonical storage entrypoint for the MVP so schema, repositories, and b
 - Parent story: [M0 Storage bootstrap](../story.md)
 - Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
 - Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)
+- Depends on story: [M0 Runtime and package contract](../../01_runtime_package_contract/story.md)
+- Depends on story: [M0 Config and login contract](../../02_config_login_contract/story.md)

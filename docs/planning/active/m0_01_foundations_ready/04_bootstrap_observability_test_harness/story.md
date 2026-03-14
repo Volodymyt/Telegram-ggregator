@@ -1,7 +1,6 @@
 # M0 Bootstrap, observability, and test harness
 
 Status: Draft
-Owner: Tech Lead
 Last updated: 2026-03-14
 
 ## Goal

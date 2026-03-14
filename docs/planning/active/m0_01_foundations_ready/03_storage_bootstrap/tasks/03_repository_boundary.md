@@ -1,7 +1,6 @@
 # M0 Storage bootstrap: repository boundary and persistence primitives
 
 Status: Ready
-Owner: TBD
 Last updated: 2026-03-14
 
 ## Goal
@@ -14,10 +13,6 @@ Define the minimum stable persistence boundary that later reader, processing, ag
 - Implement the minimum persistence primitives needed to create, fetch, and update `message_records` and `event_records`.
 - Make idempotent source-message persistence and explicit transaction boundaries part of the storage contract.
 - Exclude candidate claiming, event deduplication, publish recovery, and other later business workflows.
-
-## Dependencies
-
-- [02_schema_baseline.md](02_schema_baseline.md)
 
 ## Steps
 
@@ -42,6 +37,6 @@ Define the minimum stable persistence boundary that later reader, processing, ag
 
 - Parent epic: [M0 Foundations Ready](../../epic.md)
 - Parent story: [M0 Storage bootstrap](../story.md)
-- Depends on task: [02_schema_baseline.md](02_schema_baseline.md)
 - Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
 - Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)
+- Depends on task: [02_schema_baseline.md](02_schema_baseline.md)

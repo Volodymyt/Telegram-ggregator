@@ -1,7 +1,6 @@
 # M0 Config and login contract
 
 Status: Draft
-Owner: Tech Lead
 Last updated: 2026-03-14
 
 ## Goal

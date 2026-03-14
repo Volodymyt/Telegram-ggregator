@@ -1,7 +1,6 @@
 # M0 Foundations Ready
 
 Status: Active
-Owner: Tech Lead
 Last updated: 2026-03-14
 
 ## Goal
@@ -16,20 +15,6 @@ Establish the executable MVP baseline so later slices can add intake, aggregatio
 - Wire PostgreSQL connectivity, migration execution, and the initial durable schema baseline.
 - Add runtime bootstrap, worker lifecycle management, structured logging, lightweight health reporting, and test scaffolding.
 - Exclude Telegram intake, filter evaluation, candidate aggregation, and publication logic beyond the interfaces needed to bootstrap the service.
-
-## Current State
-
-- `Dockerfile` still starts `python -m Telegram-aggregator`.
-- `requirements.txt` is still a placeholder.
-- `src/telegram_aggregator/` does not yet contain the target runtime modules.
-- The repository still needs a canonical bootstrap path, config layer, storage layer, observability baseline, and test harness.
-
-## Story Map
-
-1. [M0 Runtime and package contract](01_runtime_package_contract/story.md)
-2. [M0 Config and login contract](02_config_login_contract/story.md)
-3. [M0 Storage bootstrap](03_storage_bootstrap/story.md)
-4. [M0 Bootstrap, observability, and test harness](04_bootstrap_observability_test_harness/story.md)
 
 ## Steps
 
@@ -62,3 +47,7 @@ Establish the executable MVP baseline so later slices can add intake, aggregatio
 - Parent plan: [MVP Delivery Plan](../2026-03-14-mvp-delivery-plan.md)
 - Requirements: [Requirements](../../../project/requirements.md)
 - Architecture spec: [Architecture spec](../../../project/architecture-spec.md)
+- Story: [M0 Runtime and package contract](01_runtime_package_contract/story.md)
+- Story: [M0 Config and login contract](02_config_login_contract/story.md)
+- Story: [M0 Storage bootstrap](03_storage_bootstrap/story.md)
+- Story: [M0 Bootstrap, observability, and test harness](04_bootstrap_observability_test_harness/story.md)

@@ -1,7 +1,6 @@
 # M0 Storage bootstrap: startup readiness and migration hooks
 
 Status: Ready
-Owner: TBD
 Last updated: 2026-03-14
 
 ## Goal
@@ -14,11 +13,6 @@ Expose one storage initialization path that proves Postgres reachability and mig
 - Distinguish operator-facing failures for database reachability versus migration execution.
 - Export a narrow readiness contract that the bootstrap and health layers can consume.
 - Exclude general worker lifecycle management and health endpoint implementation, which belong to the bootstrap story.
-
-## Dependencies
-
-- [01_storage_surface_alembic.md](01_storage_surface_alembic.md)
-- [02_schema_baseline.md](02_schema_baseline.md)
 
 ## Steps
 
@@ -43,7 +37,7 @@ Expose one storage initialization path that proves Postgres reachability and mig
 
 - Parent epic: [M0 Foundations Ready](../../epic.md)
 - Parent story: [M0 Storage bootstrap](../story.md)
-- Depends on task: [01_storage_surface_alembic.md](01_storage_surface_alembic.md)
-- Depends on task: [02_schema_baseline.md](02_schema_baseline.md)
 - Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
 - Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)
+- Depends on task: [01_storage_surface_alembic.md](01_storage_surface_alembic.md)
+- Depends on task: [02_schema_baseline.md](02_schema_baseline.md)

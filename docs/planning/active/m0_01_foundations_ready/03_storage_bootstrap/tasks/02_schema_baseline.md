@@ -1,7 +1,6 @@
 # M0 Storage bootstrap: schema baseline for message and event records
 
 Status: Ready
-Owner: TBD
 Last updated: 2026-03-14
 
 ## Goal
@@ -14,10 +13,6 @@ Freeze the MVP durable-state contract for `message_records` and `event_records` 
 - Encode the locked MVP message statuses, event states, publish statuses, foreign-key relation, timestamp fields, and nullability rules.
 - Add the first Alembic revision that creates both tables together with required constraints and indexes.
 - Exclude repository APIs, startup readiness checks, and business-state transitions beyond the baseline contract.
-
-## Dependencies
-
-- [01_storage_surface_alembic.md](01_storage_surface_alembic.md)
 
 ## Steps
 
@@ -42,6 +37,6 @@ Freeze the MVP durable-state contract for `message_records` and `event_records` 
 
 - Parent epic: [M0 Foundations Ready](../../epic.md)
 - Parent story: [M0 Storage bootstrap](../story.md)
-- Depends on task: [01_storage_surface_alembic.md](01_storage_surface_alembic.md)
 - Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
 - Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)
+- Depends on task: [01_storage_surface_alembic.md](01_storage_surface_alembic.md)
