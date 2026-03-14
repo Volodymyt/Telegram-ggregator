@@ -21,5 +21,10 @@ Use this document to define project-specific terms, abbreviations, and domain la
 - `FloodWait`: Telegram-imposed wait period after a rate limit is hit.
 - `User session`: Persisted authenticated Telegram account session used for MTProto access.
 - `Dry run`: Execution mode in which matches are logged but not published.
+- `Epic`: A large outcome-oriented planning item that groups related stories.
+- `Story`: A testable delivery slice within one epic that can be decomposed into tasks.
+- `Task`: The smallest execution planning item within one story that describes concrete implementation work.
+
+Use the hierarchy `epic > story > task` during planning decomposition.
 
 Add new entries when a term could be interpreted differently by engineers, operators, or stakeholders.
