@@ -39,7 +39,7 @@ Last updated: 2026-03-14
 - Повторний відповідний сигнал `start` більш ніж через 5 хвилин після початкового старту події відкриває нову подію.
 - Сигнал `clear` закриває лише активну подію того самого `event_type` і ніколи не публікується.
 - `DRY_RUN` лишається підтримуваним режимом оператора й має пригнічувати Telegram side effects, не оминаючи intake, filtering, aggregation або persistence logic.
-- Restart recovery має покривати durable work, яка може залишитися в станах `candidate`, `selected_for_publish` або `publishing`.
+- Restart recovery має покривати довговічну роботу, яка може залишитися зі `classification_status='candidate' and aggregation_status='queued'`, або `publish_status in ('queued', 'publishing')`.
 
 ## Висновки дослідження
 
@@ -80,7 +80,17 @@ Last updated: 2026-03-14
 
 - Використовувати PostgreSQL з SQLAlchemy 2.x async engine і SQLAlchemy Core, а не ORM models.
 - Використовувати Alembic для schema migrations.
-- Центрувати persistence навколо `message_records` і `event_records`.
+- Тримати persistence сфокусованим на `tg_message` і `event`.
+- Послідовно застосовувати іменування таблиць:
+  - використовувати `snake_case` для всіх database identifiers;
+  - використовувати назви таблиць в однині, що семантично відповідають сутності;
+  - не використовувати допоміжні суфікси на кшталт `records`;
+  - префіксувати таблиці, що зберігають дані походженням із Telegram, через `tg_`.
+- Послідовно застосовувати Python naming за PEP 8:
+  - використовувати CapWords для класів, типізованих структур та інших type-like objects;
+  - використовувати `snake_case` для модулів, функцій, методів, змінних і не-типових ідентифікаторів.
+- Моделювати прогрес `tg_message` через незалежні осі статусів замість одного перевантаженого поля статусу повідомлення.
+- Для `aggregation_status` і `publish_status` використовувати `new`, коли етап ще не було заплановано, і `queued`, коли повідомлення явно очікує обробки воркером.
 - Використовувати transactional row claiming через `SELECT ... FOR UPDATE SKIP LOCKED` для candidate recovery і processing там, де важлива ownership рядків.
 
 ### Нормалізація
@@ -105,10 +115,12 @@ Last updated: 2026-03-14
 
 ### Retry і recovery для publish
 
-- `FloodWaitError` обробляється через сон на точно вказану тривалість і повтор тієї самої publication job.
-- Інші transient publish failures використовують persisted retry state з exponential backoff `5s`, `15s`, `30s`, `60s`, а далі capped retries по `300s` для MVP.
-- Non-retriable publish failures позначають вибране повідомлення як `publish_failed`, а пов'язану подію як `failed`, без подальших повторів.
-- Bootstrap має перебудовувати publication jobs із Postgres для рядків, що лишилися в `selected_for_publish` або `publishing`, перш ніж steady-state processing вважатиметься healthy.
+- Свіжість публікації обмежується `120s` від першої спроби публікації.
+- `FloodWaitError` підлягає повторній спробі лише тоді, коли повідомлений час очікування вкладається в залишкове вікно свіжості `120s`; інакше job встановлює `tg_message.publish_status='failed'`, а помилка логується.
+- Інші transient publish failures використовують persisted retry state з exponential backoff `5s`, `15s`, `30s`, `60s`, але лише поки наступна спроба все ще вкладається в те саме вікно свіжості `120s`.
+- Будь-яка publication job, яка не може завершитися в межах `120s` від першої спроби публікації, встановлює `tg_message.publish_status='failed'`, логує помилку і припиняє retry.
+- Non-retriable publish failures встановлюють `tg_message.publish_status='failed'` і для події-власника `publish_status='failed'` без подальших повторних спроб.
+- Bootstrap має перебудовувати publication jobs із Postgres для рядків, що лишилися з `publish_status='queued'` або `publish_status='publishing'`, перш ніж steady-state processing вважатиметься healthy.
 
 ### Операторський досвід і observability
 
@@ -136,23 +148,30 @@ Last updated: 2026-03-14
 
 - `CandidateMessage`
 - `EventSignal`
-- `EventRecord`
+- `Event`
 - `PublicationJob`
-- стани `message_records`:
-  - `received`
+- `tg_message.classification_status`:
+  - `pending`
+  - `outdated`
   - `filtered_out`
   - `candidate`
+- `tg_message.aggregation_status`:
+  - `new`
+  - `queued`
   - `suppressed_duplicate`
-  - `selected_for_publish`
-  - `publishing`
-  - `published`
-  - `publish_failed`
+  - `selected`
   - `clear_processed`
   - `orphan_clear`
-- `event_records.state`:
+- `tg_message.publish_status`:
+  - `new`
+  - `queued`
+  - `publishing`
+  - `published`
+  - `failed`
+- `event.state`:
   - `open`
   - `closed`
-- `event_records.publish_status`:
+- `event.publish_status`:
   - `pending`
   - `published`
   - `failed`
@@ -197,7 +216,7 @@ Last updated: 2026-03-14
 ### 4. Candidate Aggregation і Event Lifecycle
 
 - Consumer черги candidate.
-- Recovery scan для збережених рядків `candidate`.
+- Recovery scan для збережених рядків candidate зі `classification_status='candidate'` і `aggregation_status='queued'`.
 - Генерація `candidate_signature`.
 - Fuzzy matching проти відкритих подій.
 - Suppression дублікатів і зв'язування з подіями.
@@ -209,7 +228,7 @@ Last updated: 2026-03-14
 - Форматування payload і attribution footer.
 - Telethon adapter для publish у target channel.
 - Обробка flood wait.
-- Restart-safe recovery рядків `selected_for_publish` і `publishing`.
+- Restart-safe recovery рядків із `publish_status='queued'` і `publish_status='publishing'`.
 - Обробка terminal failures і persisted retry state.
 - Fallback-поведінка для випадків, коли копіювання заборонене.
 
@@ -243,12 +262,13 @@ Last updated: 2026-03-14
 ### M1 Intake To Candidate
 
 Результат:
-- Нові повідомлення з source читаються з Telegram, один раз зберігаються, нормалізуються, фільтруються й позначаються як `filtered_out` або `candidate`.
+- Нові повідомлення з джерел читаються з Telegram, один раз зберігаються, нормалізуються й позначаються як `outdated`, `filtered_out` або `candidate`.
 
 Критерії виходу:
-- Deduplication для source messages працює за `(source_chat_id, source_message_id)`.
+- Deduplication для повідомлень із джерел працює за `(source_chat_id, source_message_id)`.
 - Поведінка filters покриває режими `any` і `all`.
 - Поведінка filters покриває `case_insensitive` і normalization toggles з YAML contract.
+- Повідомлення, які вже застаріли до класифікації, позначаються як `outdated` без фільтрації або обробки як candidates.
 - Candidate classification зберігає `event_type`, `event_signal` і `candidate_signature`.
 - Intake і processing на основі черг працюють end-to-end без публікації.
 
@@ -260,6 +280,7 @@ Last updated: 2026-03-14
 Критерії виходу:
 - Правило `first arrival wins` виконується.
 - Дубльовані `start` candidates у межах активного вікна стають `suppressed_duplicate`.
+- Вибрані повідомлення проходять через `tg_message.publish_status='queued'` до того, як їх забере publish worker.
 - Текстова публікація працює з attribution.
 - `DRY_RUN` пригнічує записи в target channel, зберігаючи той самий шлях publish decision для перевірки.
 - Перший вертикальний slice можна продемонструвати end-to-end.
@@ -267,14 +288,14 @@ Last updated: 2026-03-14
 ### M3 Full Event Lifecycle And Recovery
 
 Результат:
-- Система обробляє сигнали `clear`, restart recovery, persisted claiming для candidate і переходи станів під час publish failures.
+- Система обробляє сигнали `clear`, restart recovery, persisted claiming кандидатів і переходи станів під час збоїв публікації.
 
 Критерії виходу:
 - Відповідний `clear` закриває активну подію і не публікується.
 - Невідповідний `clear` стає `orphan_clear`.
-- Restart recovery сканує збережені рядки `candidate`, `selected_for_publish` і `publishing` та відновлює роботу без дубльованої публікації.
-- Publish status і terminal failures зберігаються як на message records, так і на event records.
-- Transient publish failures ідуть за зафіксованою політикою backoff і зберігають persisted retry state.
+- Restart recovery сканує збережені рядки candidate, що очікують агрегації, і рядки публікації з `publish_status in ('queued', 'publishing')` та відновлює роботу без дубльованої публікації.
+- Publish status і terminal failures зберігаються і в рядках `tg_message`, і в рядках `event`.
+- Transient publish failures ідуть за зафіксованою політикою backoff, зупиняються після `120s` від першої спроби публікації та логують terminal timeout failures.
 
 ### M4 MVP Hardening
 
@@ -283,8 +304,8 @@ Last updated: 2026-03-14
 
 Критерії виходу:
 - Підтримуються photo posts із captions.
-- Fallback для забороненого копіювання поводиться детерміновано.
-- Обробка flood wait і retry behavior покриті перевірками.
+- Fallback для copy-forbidden поводиться детерміновано.
+- Обробка flood wait і обмежене вікно retry `120s` покриті перевірками.
 - Сервіс підтримує щонайменше 100 налаштованих sources на цільовому deployment profile.
 - Нормальна end-to-end latency лишається в межах 10-30 секунд, коли flood waits не активні.
 - Runtime guidance покриває роботу із secrets і reduced-privilege container operation.
@@ -293,8 +314,8 @@ Last updated: 2026-03-14
 
 ## Правила залежностей для майбутньої декомпозиції завдань
 
-- Розбивай роботу спочатку за віхами, а потім за workstreams.
-- Кожне майбутнє завдання має мапитися на одного primary component owner і один acceptance signal.
+- Розбивай роботу спочатку за віхами, а потім за workstream.
+- Кожне майбутнє завдання має називати один primary implementation component і один acceptance signal.
 - Не створюй cross-component tasks, якщо робота не є foundational, storage-related або operational.
 - Candidate aggregation лишається єдиним місцем, де дозволено deduplicate candidates, керувати event lifecycle і створювати publication jobs.
 - Publish behavior лишається ізольованою в publish worker і publisher adapter.
@@ -310,13 +331,15 @@ Last updated: 2026-03-14
 - дубльовані source messages безпечно ігноруються;
 - include і exclude filters працюють і в режимі `any`, і в режимі `all`;
 - зміни нормалізації впливають на matching лише через задокументований pipeline;
+- застарілі повідомлення з джерел позначаються як `outdated` до оцінювання фільтрів;
 - `DRY_RUN` пригнічує target publication, не оминаючи логіку publish decision;
 - схожі `start` messages у межах 5 хвилин мапляться на одну подію;
 - повторний `start` через 5 хвилин відкриває нову подію;
 - `clear` закриває лише активну подію того самого `event_type`;
-- restart recovery безпечно відновлює необроблені рядки `candidate`, `selected_for_publish` і `publishing`;
+- restart recovery безпечно відновлює рядки candidate, що очікують агрегації, і рядки публікації в станах `queued` або `publishing`;
 - publish failures коректно оновлюють persisted state;
-- transient publish retries ідуть за зафіксованою політикою backoff;
+- transient publish retries ідуть за зафіксованою політикою backoff лише в межах `120s` від першої спроби публікації;
+- publication jobs, які перевищують вікно свіжості публікації `120s`, логуються і зберігаються з `tg_message.publish_status='failed'`;
 - text і photo-with-caption flows відповідають планці прийняття MVP.
 
 ## Поза межами цього плану

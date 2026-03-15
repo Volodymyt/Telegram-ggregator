@@ -14,33 +14,22 @@ Use one of the following statuses for each item:
 
 ## Planning Item Types
 
-- `Epic`: A large outcome-oriented planning item that groups related stories.
-- `Story`: A testable delivery slice within one epic that can be decomposed into tasks.
-- `Task`: The smallest execution item within one story that describes concrete implementation work.
+- Canonical planning items still use the hierarchy `epic > story > task` after promotion into [`active/`](active/README.md).
+- Backlog sections such as `M1`, `M2`, and similar milestone headers are release-grouping aids, not canonical planning items.
+- Backlog entries describe the intended future shape of work and may later be promoted into canonical epic, story, or task documents.
 
-Use the hierarchy `epic > story > task` during decomposition.
+## Title Convention
 
-## Title Lineage Convention
-
-Encode ancestor relationships directly in the item title by using planning file stems in square brackets.
-
-```md
-- [Status] Epic title
-- [Status][2026-03-14-epic-example-epic] Story title
-- [Status][2026-03-14-epic-example-epic][2026-03-14-story-example-story] Task title
-```
-
-- Use only ancestor file stems, without `.md` or directory names.
-- Order bracket segments from the highest ancestor to the nearest ancestor.
-- Do not include the current item's own file stem in its title.
-- If an ancestor does not have its own planning file yet, omit that bracket segment until the file exists.
+- Keep backlog titles human-readable and free of path-derived IDs.
+- Do not encode ancestor directory names, filenames, or `Planning ID` values in backlog item titles.
+- Express lineage or dependency context in the `Links` field when it helps prioritization.
 
 ## Item Template
 
 Use a compact format for each backlog item:
 
 ```md
-- [Status][ancestor-file-stem-1][ancestor-file-stem-2] Short title
+- [Status] Short title
   - Type: Epic | Story | Task
   - Why it matters:
   - Acceptance signal:
@@ -50,15 +39,16 @@ Use a compact format for each backlog item:
 ## Maintenance Rule
 
 - Keep the list prioritized from top to bottom.
-- Keep title lineage aligned with current planning filenames when linked ancestor files exist.
+- Backlog entries stay flexible and do not reserve `Planning ID` values.
+- When an item is promoted into [`active/`](active/README.md), assign the next `Planning ID`, choose its local sibling `order`, and create the canonical path using the active planning naming contract.
 - Move active execution plans into [`active/`](active/README.md).
 - Move completed or superseded work into [`archive/`](archive/README.md).
 
 ## Prioritized Items
 
-These items intentionally omit lineage brackets until separate epic or story planning files exist.
+These items intentionally stay free of canonical IDs and path lineage until they are promoted into separate planning files.
 
-Current active execution focus: [M0 Foundations Ready](active/2026-03-14-epic-m0-foundations-ready.md).
+Current active execution focus: [M0 Foundations Ready](active/01_0001_foundations_ready/0001_foundations_ready.md).
 
 ### M1
 
