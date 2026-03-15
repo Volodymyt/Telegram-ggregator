@@ -6,7 +6,11 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from telegram_aggregator.config.runtime import RuntimeConfig, load_runtime_config
+from telegram_aggregator.config.runtime import (
+    RuntimeConfig,
+    RuntimeConfigError,
+    load_runtime_config,
+)
 
 if TYPE_CHECKING:
     from telegram_aggregator.reading.telegram_client import MessageInfo
@@ -56,7 +60,11 @@ class ServiceRuntime:
 def run_service() -> None:
     """Route service startup through the canonical bootstrap boundary."""
 
-    config = load_runtime_config()
+    try:
+        config = load_runtime_config()
+    except RuntimeConfigError as exc:
+        raise SystemExit(str(exc)) from None
+
     logging.basicConfig(
         level=config.logging.level,
         format=config.logging.format,

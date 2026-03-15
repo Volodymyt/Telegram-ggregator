@@ -3,11 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    restart: unless-stopped
+    command: ["python", "-m", "telegram_aggregator"]
+    restart: "no"
     env_file:
       - .env
-    secrets:
-      - session
+    environment:
+      TG_SESSION_PATH: /var/app/sessions/default.session
     volumes:
       - ./:/var/app
     depends_on:
@@ -29,7 +30,3 @@ services:
 
 volumes:
   postgres_data:
-
-secrets:
-  session:
-    file: ./session.session
