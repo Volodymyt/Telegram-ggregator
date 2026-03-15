@@ -1,7 +1,8 @@
-# M0 Storage bootstrap: storage surface and Alembic scaffold
+# M0 Storage foundation: storage surface and Alembic scaffold
 
+Planning ID: 0013
 Status: Ready
-Last updated: 2026-03-14
+Last updated: 2026-03-15
 
 ## Goal
 
@@ -32,13 +33,13 @@ Lock one canonical storage entrypoint for the MVP so schema, repositories, and b
 - `src/telegram_aggregator/storage/` exists as the canonical storage package surface.
 - Alembic is present in the repo and resolves the canonical SQLAlchemy Core metadata without ad hoc wiring.
 - Storage initialization depends on the shared M0 config contract for database settings.
-- No second storage bootstrap path is introduced outside the canonical package.
+- No second storage initialization path is introduced outside the canonical package.
 
 ## Links
 
-- Parent epic: [M0 Foundations Ready](../../epic.md)
-- Parent story: [M0 Storage bootstrap](../story.md)
+- Parent epic: [M0 Foundations Ready](../../0001_foundations_ready.md)
+- Parent story: [M0 Storage foundation](../0012_storage_foundation.md)
 - Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
 - Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)
-- Depends on story: [M0 Runtime and package contract](../../01_runtime_package_contract/story.md)
-- Depends on story: [M0 Config and login contract](../../02_config_login_contract/story.md)
+- Depends on story: [M0 Runtime and package contract](../../01_0002_runtime_package_contract/0002_runtime_package_contract.md)
+- Depends on story: [M0 Config and login contract](../../02_0007_config_login_contract/0007_config_login_contract.md)

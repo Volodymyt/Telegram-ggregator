@@ -1,7 +1,8 @@
 # M0 Config and login contract
 
+Planning ID: 0007
 Status: Draft
-Last updated: 2026-03-14
+Last updated: 2026-03-15
 
 ## Goal
 
@@ -20,10 +21,10 @@ Lock the operator-facing startup contract so configuration, validation, and logi
 
 ## Steps
 
-1. Model the startup settings boundary so env and YAML inputs are loaded once and validated before service bootstrap continues.
-2. Validate the YAML shape for sources, typed include rules, exclude rules, repost options, and runtime settings that affect startup semantics.
-3. Validate identifier formats, log level values, queue sizes, boolean toggles, and `all`-mode consistency rules before runtime initialization.
-4. Route both supported login paths through one session-bootstrap flow with the same session-path validation and operator-facing error behavior.
+1. Implement [M0 Config and login contract: startup settings boundary and env contract](tasks/01_0008_startup_settings_boundary.md) to load the operator-facing env surface and `CONFIG_PATH` once before runtime bootstrap continues.
+2. Continue with [M0 Config and login contract: YAML contract models and file loading](tasks/02_0009_yaml_contract_models.md) to lock the typed file-based configuration shape for sources, filters, repost settings, and startup-relevant runtime sections.
+3. Add [M0 Config and login contract: startup semantic validation and identifier rules](tasks/03_0010_startup_semantic_validation.md) to reject unsupported identifiers, inconsistent filter semantics, and invalid startup toggles with actionable errors.
+4. Finish with [M0 Config and login contract: shared session bootstrap and login alignment](tasks/04_0011_login_session_bootstrap.md) to route `python -m telegram_aggregator.login` and `LOGIN=1` through one session-path and operator error contract.
 
 ## Risks
 
@@ -42,7 +43,7 @@ Lock the operator-facing startup contract so configuration, validation, and logi
 
 ## Links
 
-- Parent epic: [M0 Foundations Ready](../epic.md)
+- Parent epic: [M0 Foundations Ready](../0001_foundations_ready.md)
 - Parent plan: [MVP Delivery Plan](../../2026-03-14-mvp-delivery-plan.md)
 - Requirements: [Requirements](../../../../project/requirements.md)
 - Architecture spec: [Architecture spec](../../../../project/architecture-spec.md)

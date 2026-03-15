@@ -1,7 +1,8 @@
-# M0 Storage bootstrap: startup readiness and migration hooks
+# M0 Storage contract and readiness: startup readiness and migration hooks
 
+Planning ID: 0017
 Status: Ready
-Last updated: 2026-03-14
+Last updated: 2026-03-15
 
 ## Goal
 
@@ -16,7 +17,7 @@ Expose one storage initialization path that proves Postgres reachability and mig
 
 ## Steps
 
-1. Implement the async engine initialization path for storage bootstrap.
+1. Implement the async engine initialization path for canonical storage readiness.
 2. Add a connectivity probe that fails fast when Postgres is unreachable.
 3. Add migration execution or validation to the same startup path.
 4. Expose storage readiness results and distinct failure types for consumption by the bootstrap and health layers.
@@ -35,9 +36,9 @@ Expose one storage initialization path that proves Postgres reachability and mig
 
 ## Links
 
-- Parent epic: [M0 Foundations Ready](../../epic.md)
-- Parent story: [M0 Storage bootstrap](../story.md)
+- Parent epic: [M0 Foundations Ready](../../0001_foundations_ready.md)
+- Parent story: [M0 Storage contract and readiness](../0015_storage_contract_readiness.md)
 - Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
 - Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)
-- Depends on task: [01_storage_surface_alembic.md](01_storage_surface_alembic.md)
-- Depends on task: [02_schema_baseline.md](02_schema_baseline.md)
+- Depends on task: [01_0013_storage_surface_alembic.md](../../03_0012_storage_foundation/tasks/01_0013_storage_surface_alembic.md)
+- Depends on task: [02_0014_schema_baseline.md](../../03_0012_storage_foundation/tasks/02_0014_schema_baseline.md)

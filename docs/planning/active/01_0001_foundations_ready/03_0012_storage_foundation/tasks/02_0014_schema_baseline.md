@@ -1,7 +1,8 @@
-# M0 Storage bootstrap: schema baseline for message and event records
+# M0 Storage foundation: schema baseline for message and event records
 
+Planning ID: 0014
 Status: Ready
-Last updated: 2026-03-14
+Last updated: 2026-03-15
 
 ## Goal
 
@@ -35,8 +36,8 @@ Freeze the MVP durable-state contract for `message_records` and `event_records` 
 
 ## Links
 
-- Parent epic: [M0 Foundations Ready](../../epic.md)
-- Parent story: [M0 Storage bootstrap](../story.md)
+- Parent epic: [M0 Foundations Ready](../../0001_foundations_ready.md)
+- Parent story: [M0 Storage foundation](../0012_storage_foundation.md)
 - Parent plan: [MVP Delivery Plan](../../../2026-03-14-mvp-delivery-plan.md)
 - Architecture spec: [Architecture spec](../../../../../project/architecture-spec.md)
-- Depends on task: [01_storage_surface_alembic.md](01_storage_surface_alembic.md)
+- Depends on task: [01_0013_storage_surface_alembic.md](01_0013_storage_surface_alembic.md)
