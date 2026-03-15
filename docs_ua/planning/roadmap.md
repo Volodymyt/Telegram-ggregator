@@ -23,7 +23,7 @@
 ## Now
 
 - Зробити поставку MVP готовою до декомпозиції, зафіксувавши послідовність milestones, технічні defaults, семантику recovery і покриття вимог для поточної базової лінії імплементації. Детальний план: [2026-03-14-mvp-delivery-plan.md](active/2026-03-14-mvp-delivery-plan.md).
-- Виконати milestone `M0 Foundations Ready`, щоб замінити застарілу базову лінію runtime канонічним пакетом, контрактом config/login, bootstrap storage і основами operability. Активний епік: [M0: готовність основ](active/2026-03-14-epic-m0-foundations-ready.md).
+- Виконати milestone `M0 Foundations Ready`, щоб замінити застарілу базову лінію runtime канонічним пакетом, контрактом config/login, foundation для storage, storage readiness і основами operability. Активний епік: [M0 Foundations Ready](active/01_0001_foundations_ready/0001_foundations_ready.md).
 - Доставити перший виконуваний шлях MVP через foundations, intake, створення candidate, deduplication подій і текстову публікацію з attribution. Детальний план: [2026-03-14-mvp-delivery-plan.md](active/2026-03-14-mvp-delivery-plan.md).
 
 ## Next
