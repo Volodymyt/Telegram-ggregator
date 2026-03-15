@@ -1,7 +1,7 @@
 # M0 Runtime and package contract: dependency baseline
 
 Planning ID: 0004
-Status: Ready
+Status: Done
 Last updated: 2026-03-15
 
 ## Goal

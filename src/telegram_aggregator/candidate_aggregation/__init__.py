@@ -1,0 +1,1 @@
+"""Candidate aggregation package placeholder."""
