@@ -22,6 +22,7 @@ This directory is the entry point for internal project documentation.
 - Use [`project/requirements.md`](project/requirements.md) as the canonical MVP specification.
 - Use [`project/architecture.md`](project/architecture.md) for the short target architecture overview.
 - Use [`project/architecture-spec.md`](project/architecture-spec.md) for the implementation-oriented component design.
+- Use [`project/dependency-baseline.md`](project/dependency-baseline.md) for the canonical M0 dependency install surface.
 - Use [`adr/README.md`](adr/README.md) for durable architecture and process decisions.
 
 ## Writing Guidelines
