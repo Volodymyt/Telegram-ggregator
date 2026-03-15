@@ -1,7 +1,7 @@
 # M0 Runtime and package contract: unit-test execution contract
 
 Planning ID: 0005
-Status: Ready
+Status: Done
 Last updated: 2026-03-15
 
 ## Goal
@@ -35,6 +35,14 @@ Lock one canonical way to run unit tests against `src/telegram_aggregator/` so d
 - The supported unit-test invocation resolves imports from `telegram_aggregator` without depending on `src/Telegram-aggregator/`.
 - The unit-test contract is explicit enough that downstream M0 stories can add tests without choosing a new runner or alternate execution path.
 - The task does not introduce CI-specific orchestration or a second supported test runner.
+
+## Implementation Notes
+
+- `pytest.ini` is the repo-tracked runner contract for M0 unit-test execution.
+- The canonical unit-test command is `python -m pytest` from the repository root.
+- Discovery is limited to `tests/unit/`, and `telegram_aggregator` imports resolve from `src/`.
+- Async unit tests use `pytest-asyncio` in `strict` mode.
+- `tests/unit/test_package_contract.py` provides a minimal smoke suite for import and async-runner verification.
 
 ## Links
 
