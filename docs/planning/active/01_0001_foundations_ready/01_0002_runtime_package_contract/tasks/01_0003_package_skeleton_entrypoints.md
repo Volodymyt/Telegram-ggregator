@@ -1,7 +1,7 @@
 # M0 Runtime and package contract: package skeleton and canonical entry modules
 
 Planning ID: 0003
-Status: Ready
+Status: Done
 Last updated: 2026-03-15
 
 ## Goal
