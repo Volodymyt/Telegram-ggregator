@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     command: ["python", "-m", "telegram_aggregator"]
-    restart: unless-stopped
+    restart: "no"
     env_file:
       - .env
     environment:
