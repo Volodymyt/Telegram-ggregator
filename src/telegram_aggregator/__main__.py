@@ -1,20 +1,7 @@
-import asyncio
-import logging
+"""Canonical service entry module."""
 
-from telegram_aggregator.app import App
-from telegram_aggregator.config import config
-
-logging.basicConfig(
-    level=config.logging.level,
-    format=config.logging.format,
-)
-
-logger = logging.getLogger(__name__)
-
-
-async def main() -> None:
-    await App().run()
+from telegram_aggregator.bootstrap import run_service
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_service()
