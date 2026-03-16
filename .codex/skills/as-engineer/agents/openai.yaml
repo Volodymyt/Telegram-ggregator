@@ -1,0 +1,4 @@
+interface:
+  display_name: "As Engineer"
+  short_description: "Apply the engineer role overlay"
+  default_prompt: "Use $as-engineer $do-task 0009 to execute a planning task within the engineer role."
