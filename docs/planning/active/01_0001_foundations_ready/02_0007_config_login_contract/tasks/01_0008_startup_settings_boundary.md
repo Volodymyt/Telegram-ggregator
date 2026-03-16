@@ -1,8 +1,8 @@
 # M0 Config and login contract: startup settings boundary and env contract
 
 Planning ID: 0008
-Status: Ready
-Last updated: 2026-03-15
+Status: Done
+Last updated: 2026-03-16
 
 ## Goal
 
