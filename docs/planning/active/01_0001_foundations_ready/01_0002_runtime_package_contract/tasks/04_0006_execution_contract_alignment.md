@@ -1,7 +1,7 @@
 # M0 Runtime and package contract: execution contract alignment
 
 Planning ID: 0006
-Status: Ready
+Status: Done
 Last updated: 2026-03-15
 
 ## Goal
@@ -35,6 +35,12 @@ Remove the legacy package from the supported execution contract so Docker and lo
 - Docker and local runtime documentation point to the same canonical service module path.
 - The legacy package, if still present, is no longer described as a supported MVP execution path.
 - The canonical login path remains `python -m telegram_aggregator.login` and is not redefined elsewhere.
+
+## Implementation Notes
+
+- `docker-compose.yml` makes the canonical service command explicit with `python -m telegram_aggregator`.
+- `README.md` documents the supported local operator flows as `docker compose up app` for service startup and `docker compose run --rm app python -m telegram_aggregator.login` for login.
+- The repository no longer contains `src/Telegram-aggregator/`, so the legacy package is fully outside the supported MVP execution contract.
 
 ## Links
 

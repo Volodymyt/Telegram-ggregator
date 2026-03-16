@@ -4,6 +4,38 @@ Telegram-ggregator is a Python service repository in its initial setup stage.
 
 Project knowledge, planning documents, and role definitions live under [docs/README.md](docs/README.md).
 
+## Run Contract
+
+The supported local startup contract is containerized through Docker Compose.
+
+Copy the example environment file before running the service.
+
+```bash
+cp .env.example .env
+```
+
+For the supported Compose path, keep `TG_SESSION_PATH=/var/app/sessions/default.session`. The `app` service uses the repository bind mount, so both the service and the login command point to the writable local file `./sessions/default.session`.
+
+Install Python dependencies locally only when you need repository tooling such as tests.
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Start the service locally through Compose.
+
+```bash
+docker compose up app
+```
+
+Run the canonical login entrypoint through the same container image.
+
+```bash
+docker compose run --rm app python -m telegram_aggregator.login
+```
+
+Inside the container, the canonical module paths remain `python -m telegram_aggregator` for the service and `python -m telegram_aggregator.login` for login.
+
 ## Codex Role Wrapper
 
 Use `bin/codex-role` to launch Codex with a repository role from `docs/roles`.

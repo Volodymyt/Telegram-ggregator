@@ -1,7 +1,7 @@
 # M0 Runtime and package contract
 
 Planning ID: 0002
-Status: Draft
+Status: Done
 Last updated: 2026-03-15
 
 ## Goal
@@ -43,6 +43,13 @@ Establish the canonical runtime and packaging contract under `src/telegram_aggre
 - One canonical repo-tracked unit-test execution contract exists for `src/telegram_aggregator/`.
 - The package structure contains the component placeholders expected by the architecture spec.
 - No repo-tracked runtime path still depends on the legacy package as the supported execution contract.
+
+## Implementation Notes
+
+- `src/telegram_aggregator/` is the only supported runtime package root in the repository.
+- `requirements.txt` remains the canonical dependency baseline for Docker and local tooling.
+- `python -m pytest` remains the canonical unit-test command.
+- The supported local operator path is containerized through `docker compose`, which now advertises the same canonical `python -m telegram_aggregator` service entrypoint used by the image.
 
 ## Links
 
