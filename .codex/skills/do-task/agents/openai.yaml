@@ -1,0 +1,4 @@
+interface:
+  display_name: "Do Task"
+  short_description: "Execute a planning task by ID"
+  default_prompt: "Use $do-task 0009 to resolve a planning task by Planning ID, execute it, and update planning statuses."

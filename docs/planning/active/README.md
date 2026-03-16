@@ -51,6 +51,23 @@ docs/planning/active/
 - Top-level plan files are linked by path and do not receive `Planning ID` values.
 - Assign the next `Planning ID` as `max(existing active/archive Planning ID) + 1`.
 
+## Status Model
+
+Canonical epic, story, and task documents use one execution status model:
+
+- `Draft`: the item exists but is not approved for execution yet.
+- `Ready`: the item is approved for execution and stays `Ready` while work is in progress.
+- `Done`: the item is complete after executor self-check.
+
+Top-level date-prefixed plan files may keep broader planning statuses when needed because they are not canonical epic, story, or task documents.
+
+## Roll-Up Rules
+
+- Tasks move to `Done` explicitly after self-check.
+- Stories stay `Ready` until all child tasks are `Done`, then move to `Done`.
+- Epics stay `Ready` until all child stories are `Done`, then move to `Done`.
+- `Draft` is reserved for canonical items that are not yet approved to start.
+
 ## Suggested Template
 
 ```md
@@ -58,7 +75,7 @@ docs/planning/active/
 
 Planning ID: 0001
 Milestone: M0
-Status: Active
+Status: Ready
 Last updated:
 
 ## Goal
