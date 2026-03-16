@@ -11,6 +11,30 @@ from telegram_aggregator.bootstrap.service import run_service
 from telegram_aggregator.config import AppConfigError, ConfigPathError, load_app_config
 from telegram_aggregator.reading.telegram_client import TelegramClient
 
+_VALID_CONFIG_YAML = """\
+sources: []
+
+filters:
+  - mode: any
+    include: []
+    exclude: []
+    case_insensitive: true
+    normalize: true
+
+repost:
+  add_source_footer: true
+  footer_template: "Source: {source}\\n{link}"
+  fallback_on_copy_forbidden: "link_only"
+
+runtime:
+  processing_queue_size: 1000
+  candidate_queue_size: 1000
+  publish_queue_size: 200
+  candidate_similarity_threshold: 0.82
+  event_reopen_window_seconds: 300
+  candidate_recovery_scan_seconds: 15
+"""
+
 
 @pytest.fixture(autouse=True)
 def _disable_dotenv(monkeypatch) -> None:
@@ -39,7 +63,7 @@ class _FakeTelethonClient:
 
 def _write_config_file(tmp_path: Path) -> Path:
     config_path = tmp_path / "config.yaml"
-    config_path.write_text("sources: []\n", encoding="utf-8")
+    config_path.write_text(_VALID_CONFIG_YAML, encoding="utf-8")
     return config_path
 
 
@@ -76,6 +100,9 @@ def test_load_app_config_resolves_relative_paths(monkeypatch, tmp_path: Path) ->
 
     assert config.telegram.session_path == (tmp_path / "sessions/default.session").resolve()
     assert config.config_path == config_file.resolve()
+    assert config.file_config.sources == ()
+    assert config.file_config.filters[0].mode == "any"
+    assert config.file_config.runtime.candidate_similarity_threshold == pytest.approx(0.82)
     assert config.log_level == "INFO"
     assert config.dry_run is False
 
@@ -171,6 +198,17 @@ def test_run_service_exits_cleanly_on_invalid_log_level(monkeypatch, tmp_path: P
     monkeypatch.setenv("LOG_LEVEL", "VERBOSE")
 
     with pytest.raises(SystemExit, match="Environment variable LOG_LEVEL must be one of:"):
+        run_service()
+
+
+def test_run_service_exits_cleanly_on_invalid_yaml_shape(monkeypatch, tmp_path: Path) -> None:
+    config_file = _set_service_env(monkeypatch, tmp_path)
+    config_file.write_text("sources: []\n", encoding="utf-8")
+
+    with pytest.raises(
+        SystemExit,
+        match="Config section document root has invalid keys",
+    ):
         run_service()
 
 

@@ -1,11 +1,11 @@
 sources: []
 
 filters:
-  mode: any
-  include: []
-  exclude: []
-  case_insensitive: true
-  normalize: true
+  - mode: any
+    include: []
+    exclude: []
+    case_insensitive: true
+    normalize: true
 
 repost:
   add_source_footer: true

@@ -6,12 +6,16 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 _FALSE_VALUES = {"0", "false", "no", "off"}
 _VALID_LOG_LEVELS = tuple(sorted(logging.getLevelNamesMapping()))
+
+if TYPE_CHECKING:
+    from telegram_aggregator.config.file_config import FileConfig
 
 
 @dataclass(frozen=True)
@@ -27,8 +31,10 @@ class AppConfig:
     database_url: str
     target_channel: str
     config_path: Path
+    file_config: FileConfig
     log_level: str
     dry_run: bool
+
 
 class AppConfigError(ValueError):
     """Raised when application env input is missing or malformed."""
@@ -41,14 +47,18 @@ class ConfigPathError(AppConfigError):
 def load_app_config() -> AppConfig:
     """Load the canonical application config for bootstrap entrypoints."""
 
+    from telegram_aggregator.config.file_config import load_file_config
+
     load_dotenv()
     dry_run = _optional_bool_env("DRY_RUN", default=False)
+    config_path = _validated_config_path(_required_path_env("CONFIG_PATH"))
 
     return AppConfig(
         telegram=_load_telegram_session_settings(allow_empty=dry_run),
         database_url=_required_env("DATABASE_URL"),
         target_channel=_required_env("TARGET_CHANNEL", allow_empty=dry_run),
-        config_path=_validated_config_path(_required_path_env("CONFIG_PATH")),
+        config_path=config_path,
+        file_config=load_file_config(config_path),
         log_level=_optional_log_level_env("LOG_LEVEL", default="INFO"),
         dry_run=dry_run,
     )
