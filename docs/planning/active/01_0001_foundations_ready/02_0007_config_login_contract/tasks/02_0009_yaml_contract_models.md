@@ -1,26 +1,26 @@
 # M0 Config and login contract: YAML contract models and file loading
 
 Planning ID: 0009
-Status: Ready
-Last updated: 2026-03-15
+Status: Done
+Last updated: 2026-03-16
 
 ## Goal
 
-Lock the file-based configuration shape and parsing path so startup consumes one typed YAML contract for sources, filters, repost options, and runtime settings.
+Lock the file-based configuration shape and parsing path so startup consumes one typed YAML contract for sources, filter groups, repost options, and runtime settings.
 
 ## Scope
 
-- Define typed YAML models for `sources`, `filters`, `repost`, and `runtime`.
+- Define typed YAML models for `sources`, a list of filter groups, `repost`, and `runtime`.
 - Parse the file at `CONFIG_PATH` through one canonical loading path reused by startup validation.
-- Validate shape-level expectations for typed include rules, exclude rules, repost options, and startup-relevant runtime settings.
+- Validate shape-level expectations for per-group typed include rules, per-group exclude rules, repost options, and startup-relevant runtime settings.
 - Keep secrets and deployment-specific credentials outside the YAML contract.
 - Exclude identifier-format validation, queue-size limits, `all`-mode consistency, and session-bootstrap behavior.
 
 ## Steps
 
-1. Define the typed configuration models for the documented YAML sections and nested rule objects.
+1. Define the typed configuration models for the documented YAML sections, filter-group objects, and nested rule objects.
 2. Load YAML from the resolved `CONFIG_PATH` and map parse failures to operator-facing config errors.
-3. Validate required shape and field typing for sources, typed include rules, exclude rules, repost settings, and startup-relevant runtime sections.
+3. Validate required shape and field typing for sources, filter groups, typed include rules, exclude rules, repost settings, and startup-relevant runtime sections.
 4. Expose the parsed file configuration through the same canonical config boundary as env settings.
 
 ## Risks
@@ -31,7 +31,7 @@ Lock the file-based configuration shape and parsing path so startup consumes one
 
 ## Acceptance Criteria
 
-- The YAML contract matches the documented configuration shape for `sources`, `filters`, `repost`, and `runtime`.
+- The YAML contract matches the documented configuration shape for `sources`, `filters` as a list of filter groups, `repost`, and `runtime`.
 - Malformed YAML or shape-level config errors stop startup before steady-state bootstrap begins.
 - Startup code consumes one parsed file-config object instead of reparsing YAML in downstream modules.
 - No second configuration source is introduced for values already owned by env input.

@@ -144,13 +144,15 @@ The processing worker does not perform deduplication, event grouping, source arb
 
 ### Filter Rules
 
+- Filter config is a list of filter groups evaluated in configuration order.
 - Include rules are typed objects with `pattern`, `event_type`, and `event_signal`.
 - `event_signal` supports `start` and `clear`.
 - Exclude rules remain blocking regex patterns without lifecycle semantics.
 - Matching inspects message text and media captions.
 - Normalization runs before matching when enabled.
-- In `any` mode, the first matched include rule in configuration order classifies the candidate.
-- In `all` mode, all include rules must share the same `event_type` and `event_signal`, otherwise configuration validation fails.
+- In `any` mode, the first matched include rule within the matching filter group classifies the candidate.
+- In `all` mode, all include rules inside one filter group must share the same `event_type` and `event_signal`, otherwise configuration validation fails.
+- If multiple filter groups match, the first matching group in configuration order wins.
 
 ### Candidate Queue
 
