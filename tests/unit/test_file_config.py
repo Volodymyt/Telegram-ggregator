@@ -280,6 +280,38 @@ def test_load_file_config_rejects_non_string_list_items(
         load_file_config(config_path)
 
 
+@pytest.mark.parametrize(
+    ("content", "message"),
+    [
+        (
+            _VALID_CONFIG_YAML.replace(
+                "    case_insensitive: true",
+                '    case_insensitive: "yes"',
+                1,
+            ),
+            "Config field filters\\[0\\].case_insensitive must be a boolean",
+        ),
+        (
+            _VALID_CONFIG_YAML.replace(
+                "    normalize: true",
+                '    normalize: "yes"',
+                1,
+            ),
+            "Config field filters\\[0\\].normalize must be a boolean",
+        ),
+    ],
+)
+def test_load_file_config_rejects_non_boolean_filter_toggles(
+    tmp_path: Path,
+    content: str,
+    message: str,
+) -> None:
+    config_path = _write_config_file(tmp_path, content)
+
+    with pytest.raises(FileConfigError, match=message):
+        load_file_config(config_path)
+
+
 def test_load_file_config_rejects_boolean_runtime_integer(tmp_path: Path) -> None:
     config_path = _write_config_file(
         tmp_path,

@@ -48,12 +48,13 @@ def load_app_config() -> AppConfig:
     """Load the canonical application config for bootstrap entrypoints."""
 
     from telegram_aggregator.config.file_config import load_file_config
+    from telegram_aggregator.config.semantic_validation import validate_app_config
 
     load_dotenv()
     dry_run = _optional_bool_env("DRY_RUN", default=False)
     config_path = _validated_config_path(_required_path_env("CONFIG_PATH"))
 
-    return AppConfig(
+    config = AppConfig(
         telegram=_load_telegram_session_settings(allow_empty=dry_run),
         database_url=_required_env("DATABASE_URL"),
         target_channel=_required_env("TARGET_CHANNEL", allow_empty=dry_run),
@@ -62,6 +63,9 @@ def load_app_config() -> AppConfig:
         log_level=_optional_log_level_env("LOG_LEVEL", default="INFO"),
         dry_run=dry_run,
     )
+
+    validate_app_config(config)
+    return config
 
 
 def _load_telegram_session_settings(*, allow_empty: bool = False) -> TelegramSessionSettings:
