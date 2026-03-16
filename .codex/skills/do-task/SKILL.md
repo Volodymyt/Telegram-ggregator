@@ -9,6 +9,8 @@ Resolve a canonical planning task by `Planning ID`, execute the work, and keep t
 
 Use the shared repo helper `bin/find-planning-item` as the source of truth for task lookup. Do not search the planning tree manually unless the helper is unavailable.
 
+This skill can be composed with one role overlay skill: `as-engineer`, `as-tech-lead`, or `as-product-owner`.
+
 ## Workflow
 
 1. Run `bin/find-planning-item --json <id>` from the repository root.
@@ -18,7 +20,9 @@ Use the shared repo helper `bin/find-planning-item` as the source of truth for t
 5. Stop if `status` is `Draft`; propose moving the task to `Ready` before execution.
 6. If the task is `Done`, report that it is already complete and do not reopen it unless the user explicitly asks.
 7. If the task is `Ready`, implement the task normally.
-8. After implementation and self-check, set the task document to `Done`, update `Last updated`, then recompute the parent story and epic statuses.
+8. If exactly one role overlay skill is mentioned in the same prompt, apply that role while executing this workflow.
+9. If more than one role overlay skill is mentioned, stop and ask the user to choose one role.
+10. After implementation and self-check, set the task document to `Done`, update `Last updated`, then recompute the parent story and epic statuses.
 
 ## Status Rules
 
@@ -38,3 +42,4 @@ Use the shared repo helper `bin/find-planning-item` as the source of truth for t
 
 - If `bin/find-planning-item` is unavailable, search `Planning ID: <id>` in `docs/planning/active/` first and `docs/planning/archive/` second.
 - Ignore `docs/planning/backlog.md` for numeric task lookup because backlog items do not carry canonical `Planning ID` values.
+- Supported role-overlay composition examples: `$as-engineer $do-task 0009`, `$as-tech-lead $do-task 0009`, `$as-product-owner $do-task 0009`.
