@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import timezone
@@ -11,7 +12,7 @@ import telethon
 from telethon import TelegramClient as TelethonClient, events
 from telethon.tl.types import Channel, Message, MessageMediaDocument, MessageMediaPhoto
 
-from telegram_aggregator.config.runtime import TGConfig
+from telegram_aggregator.config import TelegramSessionSettings
 
 logger = logging.getLogger(__name__)
 
@@ -70,27 +71,62 @@ MessageCallback = Callable[[MessageInfo], Awaitable[None]]
 class TelegramClient:
     """Thin Telethon adapter used by the current service bootstrap flow."""
 
-    def __init__(self, config: TGConfig) -> None:
+    def __init__(self, config: TelegramSessionSettings, *, dry_run: bool = False) -> None:
         self._config = config
-        self._client = telethon.TelegramClient(
-            session=config.tg_session_path,
-            api_id=config.tg_api_id,
-            api_hash=config.tg_api_hash,
-        )
+        self._dry_run = dry_run
+        self._client: TelethonClient | None = None
         self._handlers: list[Callable[..., object]] = []
 
+        if not dry_run:
+            assert config.api_id is not None
+            self._client = telethon.TelegramClient(
+                session=str(config.session_path),
+                api_id=config.api_id,
+                api_hash=config.api_hash,
+            )
+
+    def _skip_in_dry_run(self, message: str) -> bool:
+        if not self._dry_run:
+            return False
+
+        logger.info(message)
+        return True
+
+    def _require_client(self) -> TelethonClient:
+        assert self._client is not None
+        return self._client
+
     async def __aenter__(self) -> TelegramClient:
-        await self._client.start(phone=self._config.tg_phone)
+        if self._skip_in_dry_run("DRY_RUN is enabled; Telegram client startup is skipped."):
+            return self
+
+        client = self._require_client()
+        await client.connect()
+
+        if not await client.is_user_authorized():
+            await client.disconnect()
+            raise RuntimeError(
+                "Telegram session is not authorized. Run "
+                "`python -m telegram_aggregator.login` first."
+            )
+
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
-        await self._client.disconnect()
+        if self._skip_in_dry_run("DRY_RUN is enabled; Telegram client shutdown is skipped."):
+            return False
+
+        await self._require_client().disconnect()
         return False
 
     async def get_user_channels(self, *, broadcast_only: bool = True) -> list[ChannelInfo]:
+        if self._skip_in_dry_run("DRY_RUN is enabled; Telegram channel discovery is skipped."):
+            return []
+
+        client = self._require_client()
         channels: list[ChannelInfo] = []
 
-        async for dialog in self._client.iter_dialogs():
+        async for dialog in client.iter_dialogs():
             entity = dialog.entity
 
             if not isinstance(entity, Channel):
@@ -117,10 +153,14 @@ class TelegramClient:
         limit: int = 100,
         min_id: int = 0,
     ) -> list[MessageInfo]:
-        entity = await self._client.get_entity(channel_tg_id)
+        if self._skip_in_dry_run("DRY_RUN is enabled; Telegram history loading is skipped."):
+            return []
+
+        client = self._require_client()
+        entity = await client.get_entity(channel_tg_id)
         messages: list[MessageInfo] = []
 
-        async for message in self._client.iter_messages(entity, limit=limit, min_id=min_id):
+        async for message in client.iter_messages(entity, limit=limit, min_id=min_id):
             if not message.text and message.media is None:
                 continue
 
@@ -134,7 +174,14 @@ class TelegramClient:
         return messages
 
     def subscribe_to_new_messages(self, callback: MessageCallback) -> Callable[..., object]:
-        @self._client.on(events.NewMessage)
+        if self._dry_run:
+            self._handlers.append(callback)
+            self._skip_in_dry_run("DRY_RUN is enabled; Telegram subscription is skipped.")
+            return callback
+
+        client = self._require_client()
+
+        @client.on(events.NewMessage)
         async def _handler(event: events.NewMessage.Event) -> None:
             chat = await event.get_chat()
 
@@ -157,7 +204,15 @@ class TelegramClient:
         return _handler
 
     def unsubscribe_from_new_messages(self, handler: Callable[..., object]) -> None:
-        self._client.remove_event_handler(handler)
+        if self._dry_run:
+            self._handlers.remove(handler)
+            logger.info(
+                "unsubscribe_from_new_messages: dry-run handler removed (remaining=%d)",
+                len(self._handlers),
+            )
+            return
+
+        self._require_client().remove_event_handler(handler)
         self._handlers.remove(handler)
         logger.info(
             "unsubscribe_from_new_messages: handler removed (remaining=%d)",
@@ -165,11 +220,20 @@ class TelegramClient:
         )
 
     def unsubscribe_all(self) -> None:
+        if self._skip_in_dry_run("unsubscribe_all: dry-run handlers cleared"):
+            self._handlers.clear()
+            return
+
+        client = self._require_client()
         for handler in list(self._handlers):
-            self._client.remove_event_handler(handler)
+            client.remove_event_handler(handler)
 
         self._handlers.clear()
         logger.info("unsubscribe_all: all handlers removed")
 
     async def run_until_disconnected(self) -> None:
-        await self._client.run_until_disconnected()
+        if self._skip_in_dry_run("DRY_RUN is enabled; waiting without Telegram transport."):
+            await asyncio.Event().wait()
+            return
+
+        await self._require_client().run_until_disconnected()

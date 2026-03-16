@@ -6,26 +6,27 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from telegram_aggregator.config.runtime import (
-    RuntimeConfig,
-    RuntimeConfigError,
-    load_runtime_config,
+from telegram_aggregator.config import (
+    AppConfig,
+    AppConfigError,
+    load_app_config,
 )
 
 if TYPE_CHECKING:
     from telegram_aggregator.reading.telegram_client import MessageInfo
 
 logger = logging.getLogger(__name__)
+_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
 
 class ServiceRuntime:
-    """Temporary runtime wiring kept behind the canonical bootstrap surface."""
+    """Current runtime wiring behind the canonical bootstrap surface."""
 
-    def __init__(self, config: RuntimeConfig) -> None:
+    def __init__(self, config: AppConfig) -> None:
         from telegram_aggregator.processing.message_queue import MessageQueue
         from telegram_aggregator.reading.telegram_client import TelegramClient
 
-        self._client = TelegramClient(config.telegram)
+        self._client = TelegramClient(config.telegram, dry_run=config.dry_run)
         self._message_queue = MessageQueue()
 
     async def run(self) -> None:
@@ -61,12 +62,12 @@ def run_service() -> None:
     """Route service startup through the canonical bootstrap boundary."""
 
     try:
-        config = load_runtime_config()
-    except RuntimeConfigError as exc:
+        config = load_app_config()
+    except AppConfigError as exc:
         raise SystemExit(str(exc)) from None
 
     logging.basicConfig(
-        level=config.logging.level,
-        format=config.logging.format,
+        level=config.log_level,
+        format=_LOG_FORMAT,
     )
     asyncio.run(ServiceRuntime(config).run())

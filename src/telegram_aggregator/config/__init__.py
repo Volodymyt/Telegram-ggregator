@@ -1,17 +1,17 @@
-"""Configuration package placeholder."""
+"""Canonical configuration package surface."""
 
-from telegram_aggregator.config.runtime import (
-    LoggingConfig,
-    RuntimeConfig,
-    RuntimeConfigError,
-    TGConfig,
-    load_runtime_config,
+from telegram_aggregator.config.app_config import (
+    AppConfig,
+    AppConfigError,
+    ConfigPathError,
+    TelegramSessionSettings,
+    load_app_config,
 )
 
 __all__ = [
-    "LoggingConfig",
-    "RuntimeConfig",
-    "RuntimeConfigError",
-    "TGConfig",
-    "load_runtime_config",
+    "AppConfig",
+    "AppConfigError",
+    "ConfigPathError",
+    "TelegramSessionSettings",
+    "load_app_config",
 ]

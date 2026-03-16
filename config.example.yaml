@@ -1,0 +1,21 @@
+sources: []
+
+filters:
+  mode: any
+  include: []
+  exclude: []
+  case_insensitive: true
+  normalize: true
+
+repost:
+  add_source_footer: true
+  footer_template: "Source: {source}\n{link}"
+  fallback_on_copy_forbidden: "link_only"
+
+runtime:
+  processing_queue_size: 1000
+  candidate_queue_size: 1000
+  publish_queue_size: 200
+  candidate_similarity_threshold: 0.82
+  event_reopen_window_seconds: 300
+  candidate_recovery_scan_seconds: 15
