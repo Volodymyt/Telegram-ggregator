@@ -8,7 +8,13 @@ import pytest
 
 from telegram_aggregator.bootstrap.login import run_login
 from telegram_aggregator.bootstrap.service import run_service
-from telegram_aggregator.config import AppConfigError, ConfigPathError, load_app_config
+from telegram_aggregator.config import (
+    AppConfigError,
+    ConfigPathError,
+    ConfigSemanticError,
+    IdentifierFormatError,
+    load_app_config,
+)
 from telegram_aggregator.reading.telegram_client import TelegramClient
 
 _VALID_CONFIG_YAML = """\
@@ -17,6 +23,47 @@ sources: []
 filters:
   - mode: any
     include: []
+    exclude: []
+    case_insensitive: true
+    normalize: true
+
+repost:
+  add_source_footer: true
+  footer_template: "Source: {source}\\n{link}"
+  fallback_on_copy_forbidden: "link_only"
+
+runtime:
+  processing_queue_size: 1000
+  candidate_queue_size: 1000
+  publish_queue_size: 200
+  candidate_similarity_threshold: 0.82
+  event_reopen_window_seconds: 300
+  candidate_recovery_scan_seconds: 15
+"""
+
+_SEMANTIC_VALID_CONFIG_YAML = """\
+sources:
+  - "@channel1"
+  - "https://t.me/channel2"
+  - "-1001234567890"
+
+filters:
+  - mode: any
+    include:
+      - pattern: "alert"
+        event_type: ballistic
+        event_signal: start
+    exclude: []
+    case_insensitive: true
+    normalize: true
+  - mode: all
+    include:
+      - pattern: "drone"
+        event_type: drone
+        event_signal: start
+      - pattern: "shahed"
+        event_type: drone
+        event_signal: start
     exclude: []
     case_insensitive: true
     normalize: true
@@ -61,9 +108,9 @@ class _FakeTelethonClient:
         return self.authorized
 
 
-def _write_config_file(tmp_path: Path) -> Path:
+def _write_config_file(tmp_path: Path, content: str = _VALID_CONFIG_YAML) -> Path:
     config_path = tmp_path / "config.yaml"
-    config_path.write_text(_VALID_CONFIG_YAML, encoding="utf-8")
+    config_path.write_text(content, encoding="utf-8")
     return config_path
 
 
@@ -73,16 +120,18 @@ def _set_service_env(
     *,
     config_path: str = "config.yaml",
     session_path: str = "sessions/default.session",
+    config_content: str = _VALID_CONFIG_YAML,
+    target_channel: str = "@alerts",
     dry_run: str | None = None,
 ) -> Path:
-    config_file = _write_config_file(tmp_path)
+    config_file = _write_config_file(tmp_path, content=config_content)
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("TG_API_ID", "123")
     monkeypatch.setenv("TG_API_HASH", "hash")
     monkeypatch.setenv("TG_SESSION_PATH", session_path)
     monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost:5432/app")
-    monkeypatch.setenv("TARGET_CHANNEL", "@alerts")
+    monkeypatch.setenv("TARGET_CHANNEL", target_channel)
     monkeypatch.setenv("CONFIG_PATH", config_path)
 
     if dry_run is None:
@@ -185,6 +234,284 @@ def test_load_app_config_still_rejects_blank_target_channel_outside_dry_run(
         load_app_config()
 
 
+@pytest.mark.parametrize(
+    ("content", "message"),
+    [
+        (
+            _SEMANTIC_VALID_CONFIG_YAML.replace(
+                "    case_insensitive: true",
+                '    case_insensitive: "yes"',
+                1,
+            ),
+            "Config field filters\\[0\\].case_insensitive must be a boolean",
+        ),
+        (
+            _SEMANTIC_VALID_CONFIG_YAML.replace(
+                "    normalize: true",
+                '    normalize: "yes"',
+                1,
+            ),
+            "Config field filters\\[0\\].normalize must be a boolean",
+        ),
+    ],
+)
+def test_load_app_config_rejects_non_boolean_filter_toggles(
+    monkeypatch,
+    tmp_path: Path,
+    content: str,
+    message: str,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=content,
+    )
+
+    with pytest.raises(AppConfigError, match=message):
+        load_app_config()
+
+
+def test_load_app_config_accepts_supported_identifier_forms(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML,
+        target_channel="alerts",
+    )
+
+    config = load_app_config()
+
+    assert config.file_config.sources == (
+        "@channel1",
+        "https://t.me/channel2",
+        "-1001234567890",
+    )
+    assert config.target_channel == "alerts"
+
+
+def test_load_app_config_accepts_numeric_target_channel(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML,
+        target_channel="-100987654321",
+    )
+
+    config = load_app_config()
+
+    assert config.target_channel == "-100987654321"
+
+
+@pytest.mark.parametrize("target_channel", ["0", "-0", "+123"])
+def test_load_app_config_rejects_invalid_numeric_target_channel(
+    monkeypatch,
+    tmp_path: Path,
+    target_channel: str,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML,
+        target_channel=target_channel,
+    )
+
+    with pytest.raises(
+        IdentifierFormatError,
+        match="Environment variable TARGET_CHANNEL must be a Telegram target identifier in one of these forms: username, @username, or non-zero numeric id",
+    ):
+        load_app_config()
+
+
+def test_load_app_config_rejects_target_channel_url(monkeypatch, tmp_path: Path) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML,
+        target_channel="https://t.me/alerts",
+    )
+
+    with pytest.raises(
+        IdentifierFormatError,
+        match="Environment variable TARGET_CHANNEL must use username, @username, or numeric id, not a Telegram URL",
+    ):
+        load_app_config()
+
+
+def test_load_app_config_rejects_invalid_source_identifier(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML.replace(
+            '  - "@channel1"\n',
+            '  - "channel1"\n',
+            1,
+        ),
+    )
+
+    with pytest.raises(
+        IdentifierFormatError,
+        match="Config field sources\\[0\\] must be a Telegram source identifier in one of these forms: @username, t\\.me/<username>, or non-zero numeric id",
+    ):
+        load_app_config()
+
+
+@pytest.mark.parametrize("source_value", ["0", "-0", "+123"])
+def test_load_app_config_rejects_invalid_numeric_source_identifier(
+    monkeypatch,
+    tmp_path: Path,
+    source_value: str,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML.replace(
+            '  - "@channel1"\n',
+            f'  - "{source_value}"\n',
+            1,
+        ),
+    )
+
+    with pytest.raises(
+        IdentifierFormatError,
+        match="Config field sources\\[0\\] must be a Telegram source identifier",
+    ):
+        load_app_config()
+
+
+def test_load_app_config_rejects_source_identifier_with_whitespace(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML.replace(
+            '  - "@channel1"\n',
+            '  - " @channel1 "\n',
+            1,
+        ),
+    )
+
+    with pytest.raises(
+        IdentifierFormatError,
+        match="Config field sources\\[0\\] must not contain leading or trailing whitespace",
+    ):
+        load_app_config()
+
+
+def test_load_app_config_rejects_source_invite_link(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML.replace(
+            '  - "@channel1"\n',
+            '  - "https://t.me/+invite"\n',
+            1,
+        ),
+    )
+
+    with pytest.raises(
+        IdentifierFormatError,
+        match="Config field sources\\[0\\] must not use Telegram invite links",
+    ):
+        load_app_config()
+
+
+def test_load_app_config_rejects_invalid_filter_mode(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML.replace("mode: any", "mode: some", 1),
+    )
+
+    with pytest.raises(
+        ConfigSemanticError,
+        match="Config field filters\\[0\\].mode must be one of: all, any",
+    ):
+        load_app_config()
+
+
+def test_load_app_config_rejects_all_mode_event_type_mismatch(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML.replace(
+            '        event_type: drone\n',
+            '        event_type: ballistic\n',
+            1,
+        ),
+    )
+
+    with pytest.raises(
+        ConfigSemanticError,
+        match="Config section filters\\[1\\] in all mode must use the same event_type and event_signal across include rules",
+    ):
+        load_app_config()
+
+
+def test_load_app_config_rejects_all_mode_event_signal_mismatch(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML.replace(
+            '      - pattern: "shahed"\n'
+            '        event_type: drone\n'
+            '        event_signal: start\n',
+            '      - pattern: "shahed"\n'
+            '        event_type: drone\n'
+            '        event_signal: clear\n',
+            1,
+        ),
+    )
+
+    with pytest.raises(
+        ConfigSemanticError,
+        match="Config section filters\\[1\\] in all mode must use the same event_type and event_signal across include rules",
+    ):
+        load_app_config()
+
+
+def test_load_app_config_rejects_zero_publish_queue_size(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML.replace(
+            "  publish_queue_size: 200",
+            "  publish_queue_size: 0",
+        ),
+    )
+
+    with pytest.raises(
+        ConfigSemanticError,
+        match="Config field runtime.publish_queue_size must be greater than zero",
+    ):
+        load_app_config()
+
+
 def test_run_service_exits_cleanly_on_missing_database_url(monkeypatch, tmp_path: Path) -> None:
     _set_service_env(monkeypatch, tmp_path)
     monkeypatch.delenv("DATABASE_URL", raising=False)
@@ -208,6 +535,24 @@ def test_run_service_exits_cleanly_on_invalid_yaml_shape(monkeypatch, tmp_path: 
     with pytest.raises(
         SystemExit,
         match="Config section document root has invalid keys",
+    ):
+        run_service()
+
+
+def test_run_service_exits_cleanly_on_invalid_identifier(monkeypatch, tmp_path: Path) -> None:
+    _set_service_env(
+        monkeypatch,
+        tmp_path,
+        config_content=_SEMANTIC_VALID_CONFIG_YAML.replace(
+            '  - "@channel1"\n',
+            '  - "channel1"\n',
+            1,
+        ),
+    )
+
+    with pytest.raises(
+        SystemExit,
+        match="Config field sources\\[0\\] must be a Telegram source identifier",
     ):
         run_service()
 

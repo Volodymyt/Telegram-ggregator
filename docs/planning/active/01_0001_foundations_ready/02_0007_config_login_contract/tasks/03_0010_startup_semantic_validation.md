@@ -1,7 +1,7 @@
 # M0 Config and login contract: startup semantic validation and identifier rules
 
 Planning ID: 0010
-Status: Ready
+Status: Done
 Last updated: 2026-03-16
 
 ## Goal
