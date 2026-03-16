@@ -11,16 +11,18 @@
 
 ### Filtering
 
-- Filtering must support include and exclude rules.
+- Filtering must support one or more filter groups with include and exclude rules.
 - Include rules must support regex patterns and pipe-separated OR expressions.
 - Each include rule must define `pattern`, `event_type`, and `event_signal`.
 - `event_signal` must support `start` and `clear`.
 - Exclude rules must support regex patterns.
-- Filter mode must support `any` and `all`.
+- Filter mode must support `any` and `all` per filter group.
 - Matching must inspect both message text and media captions.
 - Normalization must be configurable and may include lowercasing, whitespace trimming, and character normalization such as `ё` to `е`.
-- In `any` mode, the first matched include rule in configuration order defines the candidate `event_type` and `event_signal`.
-- In `all` mode, all include rules must share the same `event_type` and `event_signal`, otherwise configuration validation must fail.
+- Filter groups are evaluated in configuration order.
+- In `any` mode, the first matched include rule within the matching filter group defines the candidate `event_type` and `event_signal`.
+- In `all` mode, all include rules inside one filter group must share the same `event_type` and `event_signal`, otherwise configuration validation must fail.
+- If multiple filter groups match the same message, the first matching filter group in configuration order defines the classification result.
 
 ### Repost Behavior
 
@@ -103,18 +105,18 @@ sources:
   - "@channel2"
 
 filters:
-  mode: any
-  include:
-    - pattern: "Київ|Спуск|Балістика"
-      event_type: ballistic
-      event_signal: start
-    - pattern: "чисто"
-      event_type: ballistic
-      event_signal: clear
-  exclude:
-    - "реклама|підписуйтесь"
-  case_insensitive: true
-  normalize: true
+  - mode: any
+    include:
+      - pattern: "Київ|Спуск|Балістика"
+        event_type: ballistic
+        event_signal: start
+      - pattern: "чисто"
+        event_type: ballistic
+        event_signal: clear
+    exclude:
+      - "реклама|підписуйтесь"
+    case_insensitive: true
+    normalize: true
 
 repost:
   add_source_footer: true
@@ -134,9 +136,10 @@ runtime:
 
 ### Unit Coverage
 
-- Filter logic must cover `any` and `all` modes.
+- Filter logic must cover `any` and `all` modes across multiple filter groups, including the `first matching group wins` rule.
 - Exclude rules must block matching messages.
 - Case-insensitive and normalization behavior must be verified.
+- Config validation must reject an empty `filters` list.
 - Source-message deduplication must reject repeated processing of the same message.
 - Candidate aggregation must suppress duplicate logical events across multiple sources.
 - `clear` processing must close only an active event of the same `event_type`.
@@ -149,6 +152,11 @@ runtime:
 - Then the target channel receives a repost with attribution
 - And only the first matching source is published
 - And restarting the container does not create a duplicate repost
+
+- Given two filter groups in configuration order and a message that matches both groups
+- When the service evaluates the message against configured filters
+- Then the first matching filter group defines the candidate classification
+- And later matching groups do not override the chosen `event_type` or `event_signal`
 
 - Given an active logical event for `event_type=ballistic`
 - When a matching `clear` message arrives
