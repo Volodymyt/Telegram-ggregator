@@ -57,9 +57,8 @@
 ### One-Time Authorization
 
 - On first startup without a session file, the service must support a one-time login flow.
-- The supported operator flows are:
-  - interactive login mode controlled by `LOGIN=1`, or
-  - a separate login command such as `python -m telegram_aggregator.login`.
+- The supported operator flow is a separate login command such as `python -m telegram_aggregator.login`.
+- Phone number, login code, and 2FA password should be requested interactively by default instead of being stored in environment variables.
 
 ## Non-Functional Requirements
 
@@ -77,6 +76,7 @@
 
 - Telegram secrets must not be baked into the image.
 - `api_id`, `api_hash`, and the session file must be provided through environment variables and mounted storage.
+- Phone number and 2FA password must not be required as plain-text environment variables for the default interactive login flow.
 - The container should support reduced privileges and may optionally use a read-only root filesystem.
 - A 2FA password must not be stored in plain text.
 
@@ -84,15 +84,14 @@
 
 ### Environment Variables
 
-- `TG_API_ID`: Telegram API ID.
-- `TG_API_HASH`: Telegram API hash.
+- `TG_API_ID`: Telegram API ID. Required for normal Telegram-backed startup and login, but may be blank in a `DRY_RUN=1` bootstrap profile that performs no Telegram I/O.
+- `TG_API_HASH`: Telegram API hash. Required for normal Telegram-backed startup and login, but may be blank in a `DRY_RUN=1` bootstrap profile that performs no Telegram I/O.
 - `TG_SESSION_PATH`: path to the persisted Telegram session file, for example `/data/session.session`.
 - `DATABASE_URL`: Postgres connection string for message, candidate, and event-state persistence.
-- `TARGET_CHANNEL`: username or numeric identifier of the destination channel.
+- `TARGET_CHANNEL`: username or numeric identifier of the destination channel. Required for normal Telegram-backed startup, but may be blank in a `DRY_RUN=1` bootstrap profile that performs no Telegram I/O.
 - `CONFIG_PATH`: path to the file-based service configuration.
 - `LOG_LEVEL`: runtime log level such as `INFO`, `DEBUG`, or `WARNING`.
-- `DRY_RUN`: optional mode that logs matches without publishing.
-- `LOGIN`: optional mode that triggers one-time interactive authorization.
+- `DRY_RUN`: optional mode that disables Telegram network I/O while keeping non-Telegram startup and recovery paths available.
 
 ### Configuration File
 

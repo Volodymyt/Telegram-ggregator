@@ -11,9 +11,12 @@ Establish one canonical startup settings boundary so service and login flows loa
 ## Scope
 
 - Define the canonical `src/telegram_aggregator/config/` surface for startup settings, path resolution, and config-file discovery.
-- Parse required env vars `TG_API_ID`, `TG_API_HASH`, `TG_SESSION_PATH`, `DATABASE_URL`, `TARGET_CHANNEL`, and `CONFIG_PATH`.
-- Parse optional startup toggles `LOG_LEVEL`, `DRY_RUN`, and `LOGIN` into the same typed boundary.
+- Parse required env vars `TG_API_ID`, `TG_API_HASH`, `TG_SESSION_PATH`, `DATABASE_URL`, `TARGET_CHANNEL`, and `CONFIG_PATH`, while allowing `TG_API_ID`, `TG_API_HASH`, and `TARGET_CHANNEL` to remain blank in the no-Telegram `DRY_RUN=1` bootstrap profile.
+- Parse optional startup toggles `LOG_LEVEL` and `DRY_RUN` into the same typed boundary.
+- Keep phone number, login code, and 2FA password out of the canonical env contract so later login flows can request them interactively.
 - Validate startup-relevant paths early enough that later bootstrap code does not reopen env parsing or filesystem checks.
+- Resolve `TG_SESSION_PATH` early, but leave parent-directory creation and session-file creation rules to the later shared session-bootstrap task.
+- Make `DRY_RUN` disable Telegram client initialization entirely while preserving the non-Telegram startup boundary.
 - Exclude YAML schema modeling, cross-field filter semantics, and session authorization behavior.
 
 ## Steps
@@ -35,6 +38,8 @@ Establish one canonical startup settings boundary so service and login flows loa
 - Missing or malformed required env input stops startup before the service enters steady-state bootstrap.
 - Config-path failures are surfaced distinctly from later YAML-shape and semantic-validation failures.
 - Later M0 stories can consume the shared startup-settings boundary without reparsing env input.
+- `DRY_RUN` can enter runtime bootstrap without Telegram client initialization.
+- The config boundary documents that the dry-run bootstrap profile may leave Telegram-facing values blank because no Telegram I/O occurs in that mode.
 
 ## Links
 
