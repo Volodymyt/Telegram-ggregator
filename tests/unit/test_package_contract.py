@@ -15,6 +15,7 @@ import pytest_asyncio
         "telegram_aggregator",
         "telegram_aggregator.__main__",
         "telegram_aggregator.login",
+        "telegram_aggregator.telegram",
     ],
 )
 def test_canonical_modules_import(module_name: str) -> None:
