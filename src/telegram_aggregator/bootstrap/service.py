@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 from typing import TYPE_CHECKING
 
 from telegram_aggregator.config.runtime import (
@@ -69,4 +70,10 @@ def run_service() -> None:
         level=config.logging.level,
         format=config.logging.format,
     )
-    asyncio.run(ServiceRuntime(config).run())
+
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    try:
+        asyncio.run(ServiceRuntime(config).run())
+    except KeyboardInterrupt:
+        pass
