@@ -1,8 +1,8 @@
 # M0 Config and login contract: shared session bootstrap and startup alignment
 
 Planning ID: 0011
-Status: Ready
-Last updated: 2026-03-15
+Status: Done
+Last updated: 2026-03-17
 
 ## Goal
 
@@ -10,7 +10,7 @@ Align the dedicated login entrypoint with normal startup session handling so ses
 
 ## Scope
 
-- Route `python -m telegram_aggregator.login` through one shared login/session bootstrap flow that also defines the session-path rule used by normal startup.
+- Route `python -m telegram_aggregator.login` through one shared login/session bootstrap flow rooted in the `telegram/` integration boundary and reused by normal startup.
 - Reuse the canonical `AppConfig` boundary for session-related input instead of introducing path-specific parsing.
 - Define one rule for creating, validating, and rejecting session paths across supported execution environments.
 - Keep phone number, login code, and 2FA handling interactive by default and ensure passwords are not persisted in plain text through env, YAML, or source-controlled config.
@@ -18,8 +18,8 @@ Align the dedicated login entrypoint with normal startup session handling so ses
 
 ## Steps
 
-1. Define the shared session-bootstrap entry contract on top of the canonical `AppConfig` shape, including exactly which session-path checks it owns beyond simple path resolution.
-2. Route the dedicated login entrypoint through the same session-path preparation and authorization boundary that normal startup depends on, without reopening env parsing outside `load_app_config()`.
+1. Define the shared session-bootstrap entry contract on top of the canonical `AppConfig` shape, including exactly which session-path checks the `telegram/` boundary owns beyond simple path resolution.
+2. Route the dedicated login entrypoint through the same `telegram/` session-path preparation and authorization boundary that normal startup depends on, without reopening env parsing outside `load_app_config()`.
 3. Surface session-path failures distinctly from authorization failures and generic config errors.
 4. Preserve normal startup with an existing session file while keeping explicit login bootstrap as the supported first-time authorization path.
 
@@ -32,7 +32,7 @@ Align the dedicated login entrypoint with normal startup session handling so ses
 
 ## Acceptance Criteria
 
-- `python -m telegram_aggregator.login` and normal startup session handling share one session-bootstrap contract.
+- `python -m telegram_aggregator.login` and normal startup session handling share one session-bootstrap contract exposed through the `telegram/` integration boundary.
 - Session-path creation, parent-directory handling, validation, and failure handling follow the same rule for the dedicated login entrypoint and normal startup expectations.
 - Session-path failures are surfaced distinctly from authorization failures and generic config-shape errors.
 - The dedicated login entrypoint reuses canonical `AppConfig` loading, and phone/password prompts remain interactive instead of env-backed by default.

@@ -69,6 +69,7 @@ These defaults are chosen now to remove ambiguity before backlog decomposition.
 - Organize code by runtime component:
   - `bootstrap/`
   - `config/`
+  - `telegram/`
   - `storage/`
   - `reading/`
   - `processing/`
@@ -207,8 +208,8 @@ These items must remain visible during task decomposition even when they do not 
 
 ### 3. Intake and Processing
 
-- Telethon session startup.
-- Source subscription and message reading.
+- Telegram client bootstrap and session readiness checks.
+- Source subscription and message reading through the `telegram/` adapter and `reading/` flow.
 - Internal message normalization.
 - Include/exclude filter engine.
 - Processing queue and candidate classification.
@@ -226,7 +227,7 @@ These items must remain visible during task decomposition even when they do not 
 
 - Publish queue and serialized publish worker.
 - Payload formatting and attribution footer.
-- Telethon target-channel publish adapter.
+- Target-channel publish flow orchestrated by `publishing/` through the `telegram/` adapter.
 - Flood wait handling.
 - Restart-safe recovery of rows with `publish_status='queued'` and `publish_status='publishing'`.
 - Terminal failure handling and persisted retry state.

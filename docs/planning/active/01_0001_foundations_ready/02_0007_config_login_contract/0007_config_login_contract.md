@@ -1,8 +1,8 @@
 # M0 Config and login contract
 
 Planning ID: 0007
-Status: Ready
-Last updated: 2026-03-16
+Status: Done
+Last updated: 2026-03-17
 
 ## Goal
 
