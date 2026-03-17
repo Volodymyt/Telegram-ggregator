@@ -1,6 +1,15 @@
-"""Canonical login bootstrap placeholder."""
+"""Canonical login bootstrap entrypoint."""
+
+from __future__ import annotations
+
+import asyncio
 
 from telegram_aggregator.config import AppConfigError, load_app_config
+from telegram_aggregator.telegram import (
+    SessionAuthorizationError,
+    SessionPathError,
+    TelegramClient,
+)
 
 
 def run_login() -> None:
@@ -17,9 +26,8 @@ def run_login() -> None:
             "Telegram I/O is not allowed in dry-run mode."
         )
 
-    raise SystemExit(
-        "Login bootstrap is not implemented yet. "
-        f"Resolved session path: {config.telegram.session_path}. "
-        "Use the canonical telegram_aggregator.bootstrap.run_login entrypoint for "
-        "future session wiring."
-    )
+    try:
+        client = TelegramClient(config)
+        asyncio.run(client.authorize_interactively())
+    except (SessionAuthorizationError, SessionPathError) as exc:
+        raise SystemExit(str(exc)) from None

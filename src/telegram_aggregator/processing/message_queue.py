@@ -7,7 +7,7 @@ from collections import deque
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from telegram_aggregator.reading.telegram_client import MessageInfo
+    from telegram_aggregator.telegram import MessageInfo
 
 logger = logging.getLogger(__name__)
 
