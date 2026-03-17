@@ -479,6 +479,7 @@ src/telegram_aggregator/
   __main__.py
   bootstrap/
   config/
+  telegram/
   reading/
   storage/
   processing/
@@ -491,11 +492,12 @@ Recommended responsibilities by package:
 
 - `bootstrap/`: startup, shutdown, runtime wiring, queue creation, login entrypoints.
 - `config/`: settings, file parsing, rule validation.
-- `reading/`: Telethon event handlers, source-message normalization, source subscription setup.
+- `telegram/`: Telethon client adapter, interactive authorization, session-path handling, source subscription primitives, and target publish transport operations.
+- `reading/`: source-message normalization and intake-specific handling built on the Telegram client boundary.
 - `storage/`: Postgres connection management, schema, repositories for message and event state.
 - `processing/`: filter compilation, queue consumer, candidate classification.
 - `candidate_aggregation/`: candidate claim loop, fuzzy matching, event lifecycle, publication-job creation, restart recovery.
-- `publishing/`: publish queue consumer, payload formatting, Telethon target publish operations, retries.
+- `publishing/`: publish queue consumer, payload formatting, retries, and orchestration of target-channel publishing through `telegram/`.
 - `observability/`: structured logging, health checks, metrics hooks.
 
 Avoid these for the MVP:
@@ -513,15 +515,15 @@ The repository currently contains `src/Telegram-aggregator/`, which is a placeho
 
 Each MVP requirement should map to one primary component:
 
-- source subscription and incoming message handling: `reading/`
-- login without a session file: `bootstrap/` and `reading/`
+- source subscription and incoming message handling: `telegram/` and `reading/`
+- login without a session file: `bootstrap/` and `telegram/`
 - typed include and exclude filtering: `processing/`
 - candidate creation and status marking: `processing/`
 - event-level deduplication across sources: `candidate_aggregation/`
 - event lifecycle and clear handling: `candidate_aggregation/`
 - persistent deduplication across restarts: `storage/` and `candidate_aggregation/`
 - in-process flow control and throttling: `processing/`, `candidate_aggregation/`, and `publishing/`
-- target channel posting and fallback behavior: `publishing/`
+- target channel posting and fallback behavior: `publishing/` and `telegram/`
 - health and structured logs: `observability/`
 
 Key scenarios covered by this spec:
