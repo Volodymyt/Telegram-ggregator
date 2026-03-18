@@ -209,3 +209,4 @@ __marimo__/
 session.session
 sessions/*
 !sessions/.gitkeep
+/.claude/settings.local.json
