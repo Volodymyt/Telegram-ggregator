@@ -220,3 +220,20 @@ def test_run_service_surfaces_session_path_errors_from_post_connect_runtime(
         match="Telegram session path is not usable: .*database disk image is malformed",
     ):
         run_service()
+
+
+def test_run_service_surfaces_unexpected_errors_as_clean_exit(
+    set_service_env,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    set_service_env(dry_run="0", create_session_file=True)
+
+    monkeypatch.setattr(
+        "telegram_aggregator.telegram.client.telethon.TelegramClient",
+        lambda **kwargs: (_ for _ in ()).throw(
+            OSError("network is unreachable")
+        ),
+    )
+
+    with pytest.raises(SystemExit, match="1"):
+        run_service()

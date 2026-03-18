@@ -6,6 +6,7 @@ import asyncio
 import getpass
 import inspect
 import logging
+import signal
 import sqlite3
 from dataclasses import dataclass
 from datetime import timezone
@@ -150,11 +151,13 @@ class TelegramClient:
         return True
 
     def _require_client(self) -> TelethonClient:
-        assert self._client is not None
+        if self._client is None:
+            raise RuntimeError("Telegram client is not connected.")
         return self._client
 
     def _build_client(self) -> TelethonClient:
-        assert self._session_settings.api_id is not None
+        if self._session_settings.api_id is None:
+            raise RuntimeError("Telegram API ID is not configured.")
 
         try:
             return telethon.TelegramClient(
@@ -205,7 +208,7 @@ class TelegramClient:
 
     async def _await_telethon_result(
         self,
-        result: object,
+        result: Awaitable[_T],
         *,
         operation: str,
     ) -> _T:
@@ -297,9 +300,14 @@ class TelegramClient:
         finally:
             try:
                 await self._disconnect()
-            except SessionPathError:
+            except SessionPathError as disconnect_exc:
                 if primary_error is None:
                     raise
+                logger.warning(
+                    "secondary SessionPathError during disconnect suppressed "
+                    "(primary error will propagate): %s",
+                    disconnect_exc,
+                )
 
         if primary_error is not None:
             raise primary_error
@@ -352,6 +360,12 @@ class TelegramClient:
             client.iter_messages(entity, limit=limit, min_id=min_id)
         ):
             if not message.text and message.media is None:
+                logger.debug(
+                    "fetch_channel_history: skipping message with no text/media "
+                    "(tg_msg_id=%s, channel_tg_id=%s)",
+                    message.id,
+                    channel_tg_id,
+                )
                 continue
 
             messages.append(_to_message_info(message, channel_tg_id))
@@ -371,7 +385,6 @@ class TelegramClient:
 
         client = self._require_client()
 
-        @client.on(events.NewMessage)
         async def _handler(event: events.NewMessage.Event) -> None:
             chat = await event.get_chat()
 
@@ -380,13 +393,14 @@ class TelegramClient:
 
             message_info = _to_message_info(event.message, chat.id)
             logger.debug(
-                "New message from '%s' (tg_msg_id=%s)",
+                "new message from '%s' (tg_msg_id=%s)",
                 chat.title,
                 event.message.id,
             )
             await callback(message_info)
 
         self._handlers.append(_handler)
+        client.add_event_handler(_handler, events.NewMessage)
         logger.info(
             "subscribe_to_new_messages: handler registered (total=%d)",
             len(self._handlers),
@@ -421,9 +435,21 @@ class TelegramClient:
         self._handlers.clear()
         logger.info("unsubscribe_all: all handlers removed")
 
+    async def _wait_for_shutdown_signal(self) -> None:
+        """Wait until SIGTERM or SIGINT is received."""
+        loop = asyncio.get_event_loop()
+        done = asyncio.Event()
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            loop.add_signal_handler(sig, done.set)
+        try:
+            await done.wait()
+        finally:
+            for sig in (signal.SIGTERM, signal.SIGINT):
+                loop.remove_signal_handler(sig)
+
     async def run_until_disconnected(self) -> None:
         if self._skip_in_dry_run("DRY_RUN is enabled; waiting without Telegram transport."):
-            await asyncio.Event().wait()
+            await self._wait_for_shutdown_signal()
             return
 
         await self._await_telethon_result(

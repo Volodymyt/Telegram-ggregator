@@ -360,19 +360,142 @@ def test_load_app_config_rejects_all_mode_event_signal_mismatch(
         load_app_config()
 
 
-def test_load_app_config_rejects_zero_publish_queue_size(
+@pytest.mark.parametrize(
+    ("field", "default_value"),
+    [
+        ("processing_queue_size", "1000"),
+        ("candidate_queue_size", "1000"),
+        ("publish_queue_size", "200"),
+    ],
+)
+@pytest.mark.parametrize("value", [0, -1, -100])
+def test_load_app_config_rejects_non_positive_queue_sizes(
     set_service_env,
     semantic_valid_config_yaml: str,
+    field: str,
+    default_value: str,
+    value: int,
 ) -> None:
     set_service_env(
         config_content=semantic_valid_config_yaml.replace(
-            "  publish_queue_size: 200",
-            "  publish_queue_size: 0",
+            f"  {field}: {default_value}",
+            f"  {field}: {value}",
         ),
     )
 
     with pytest.raises(
         ConfigSemanticError,
-        match="Config field runtime.publish_queue_size must be greater than zero",
+        match=f"Config field runtime.{field} must be greater than zero",
     ):
         load_app_config()
+
+
+@pytest.mark.parametrize(
+    "threshold_value",
+    ["-0.1", "-1.0", "1.1", "2.0", ".inf", "-.inf", ".nan"],
+)
+def test_load_app_config_rejects_invalid_candidate_similarity_threshold(
+    set_service_env,
+    semantic_valid_config_yaml: str,
+    threshold_value: str,
+) -> None:
+    set_service_env(
+        config_content=semantic_valid_config_yaml.replace(
+            "  candidate_similarity_threshold: 0.82",
+            f"  candidate_similarity_threshold: {threshold_value}",
+        ),
+    )
+
+    with pytest.raises(
+        ConfigSemanticError,
+        match="Config field runtime.candidate_similarity_threshold must be between 0.0 and 1.0",
+    ):
+        load_app_config()
+
+
+@pytest.mark.parametrize("threshold_value", ["0.0", "0.5", "1.0"])
+def test_load_app_config_accepts_valid_candidate_similarity_threshold(
+    set_service_env,
+    semantic_valid_config_yaml: str,
+    threshold_value: str,
+) -> None:
+    set_service_env(
+        config_content=semantic_valid_config_yaml.replace(
+            "  candidate_similarity_threshold: 0.82",
+            f"  candidate_similarity_threshold: {threshold_value}",
+        ),
+    )
+
+    config = load_app_config()
+
+    assert config.file_config.runtime.candidate_similarity_threshold == float(
+        threshold_value
+    )
+
+
+@pytest.mark.parametrize("value", [0, -1, -100])
+def test_load_app_config_rejects_non_positive_event_reopen_window_seconds(
+    set_service_env,
+    semantic_valid_config_yaml: str,
+    value: int,
+) -> None:
+    set_service_env(
+        config_content=semantic_valid_config_yaml.replace(
+            "  event_reopen_window_seconds: 300",
+            f"  event_reopen_window_seconds: {value}",
+        ),
+    )
+
+    with pytest.raises(
+        ConfigSemanticError,
+        match="Config field runtime.event_reopen_window_seconds must be greater than zero",
+    ):
+        load_app_config()
+
+
+@pytest.mark.parametrize("value", [0, -1, -100])
+def test_load_app_config_rejects_non_positive_candidate_recovery_scan_seconds(
+    set_service_env,
+    semantic_valid_config_yaml: str,
+    value: int,
+) -> None:
+    set_service_env(
+        config_content=semantic_valid_config_yaml.replace(
+            "  candidate_recovery_scan_seconds: 15",
+            f"  candidate_recovery_scan_seconds: {value}",
+        ),
+    )
+
+    with pytest.raises(
+        ConfigSemanticError,
+        match="Config field runtime.candidate_recovery_scan_seconds must be greater than zero",
+    ):
+        load_app_config()
+
+
+@pytest.mark.parametrize(
+    ("field", "default_value", "valid_value"),
+    [
+        ("event_reopen_window_seconds", "300", "1"),
+        ("event_reopen_window_seconds", "300", "600"),
+        ("candidate_recovery_scan_seconds", "15", "1"),
+        ("candidate_recovery_scan_seconds", "15", "30"),
+    ],
+)
+def test_load_app_config_accepts_valid_seconds_fields(
+    set_service_env,
+    semantic_valid_config_yaml: str,
+    field: str,
+    default_value: str,
+    valid_value: str,
+) -> None:
+    set_service_env(
+        config_content=semantic_valid_config_yaml.replace(
+            f"  {field}: {default_value}",
+            f"  {field}: {valid_value}",
+        ),
+    )
+
+    config = load_app_config()
+
+    assert getattr(config.file_config.runtime, field) == int(valid_value)

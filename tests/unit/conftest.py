@@ -12,7 +12,10 @@ sources: []
 
 filters:
   - mode: any
-    include: []
+    include:
+      - pattern: "test"
+        event_type: test
+        event_signal: start
     exclude: []
     case_insensitive: true
     normalize: true
@@ -289,6 +292,9 @@ class FakeTelethonClient:
             return handler
 
         return _decorator
+
+    def add_event_handler(self, handler, event) -> None:
+        self.handlers.append((event, handler))
 
     def remove_event_handler(self, handler) -> None:
         self.handlers = [

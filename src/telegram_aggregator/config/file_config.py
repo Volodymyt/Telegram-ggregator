@@ -151,7 +151,7 @@ def _parse_filter_group(payload: Any, index: int) -> FilterGroupConfig:
     section_name = f"filters[{index}]"
     section = _require_mapping(payload, section_name)
     _require_exact_keys(section, _FILTER_KEYS, section_name)
-    include_values = _require_list(section["include"], f"{section_name}.include")
+    include_values = _require_non_empty_list(section["include"], f"{section_name}.include")
     include_rules = tuple(
         _parse_include_rule(rule, group_index=index, rule_index=rule_index)
         for rule_index, rule in enumerate(include_values)

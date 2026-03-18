@@ -156,3 +156,20 @@ def test_run_login_surfaces_authorization_failures(
         match="Telegram authorization failed: RPCError 400: AUTH_FAIL",
     ):
         run_login()
+
+
+def test_run_login_surfaces_unexpected_errors_as_clean_exit(
+    set_service_env,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    set_service_env()
+
+    monkeypatch.setattr(
+        "telegram_aggregator.telegram.client.telethon.TelegramClient",
+        lambda **kwargs: (_ for _ in ()).throw(
+            OSError("network is unreachable")
+        ),
+    )
+
+    with pytest.raises(SystemExit, match="1"):
+        run_login()

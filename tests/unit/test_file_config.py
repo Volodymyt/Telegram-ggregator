@@ -189,6 +189,30 @@ runtime:
         load_file_config(config_path)
 
 
+def test_load_file_config_rejects_empty_include_list(tmp_path: Path) -> None:
+    config_path = _write_config_file(
+        tmp_path,
+        _VALID_CONFIG_YAML.replace(
+            """\
+    include:
+      - pattern: "Київ|Спуск|Балістика"
+        event_type: ballistic
+        event_signal: start
+      - pattern: "чисто"
+        event_type: ballistic
+        event_signal: clear""",
+            "    include: []",
+            1,
+        ),
+    )
+
+    with pytest.raises(
+        FileConfigError,
+        match=r"Config field filters\[0\].include must contain at least one item",
+    ):
+        load_file_config(config_path)
+
+
 @pytest.mark.parametrize(
     ("content", "message"),
     [

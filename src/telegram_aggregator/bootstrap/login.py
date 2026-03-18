@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from telegram_aggregator.config import AppConfigError, load_app_config
 from telegram_aggregator.telegram import (
@@ -10,6 +11,8 @@ from telegram_aggregator.telegram import (
     SessionPathError,
     TelegramClient,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def run_login() -> None:
@@ -31,3 +34,6 @@ def run_login() -> None:
         asyncio.run(client.authorize_interactively())
     except (SessionAuthorizationError, SessionPathError) as exc:
         raise SystemExit(str(exc)) from None
+    except Exception as exc:
+        logger.error("Login failed: %s", exc)
+        raise SystemExit(1) from None

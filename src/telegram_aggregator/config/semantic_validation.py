@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from typing import TYPE_CHECKING
 
@@ -136,11 +137,28 @@ def _validate_runtime_queue_sizes(runtime: RuntimeConfig) -> None:
         runtime.publish_queue_size,
         "Config field runtime.publish_queue_size",
     )
+    _require_unit_float(
+        runtime.candidate_similarity_threshold,
+        "Config field runtime.candidate_similarity_threshold",
+    )
+    _require_positive_int(
+        runtime.event_reopen_window_seconds,
+        "Config field runtime.event_reopen_window_seconds",
+    )
+    _require_positive_int(
+        runtime.candidate_recovery_scan_seconds,
+        "Config field runtime.candidate_recovery_scan_seconds",
+    )
 
 
 def _require_positive_int(value: int, context: str) -> None:
     if value <= 0:
         raise ConfigSemanticError(f"{context} must be greater than zero")
+
+
+def _require_unit_float(value: float, context: str) -> None:
+    if math.isnan(value) or math.isinf(value) or value < 0.0 or value > 1.0:
+        raise ConfigSemanticError(f"{context} must be between 0.0 and 1.0")
 
 
 def _is_numeric_identifier(value: str) -> bool:

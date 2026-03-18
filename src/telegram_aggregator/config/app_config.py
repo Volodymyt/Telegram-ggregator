@@ -122,11 +122,11 @@ def _optional_text_env(name: str, *, default: str) -> str:
     if not value:
         raise AppConfigError(f"Environment variable {name} must not be empty")
 
-    return value.upper()
+    return value
 
 
 def _optional_log_level_env(name: str, *, default: str) -> str:
-    value = _optional_text_env(name, default=default)
+    value = _optional_text_env(name, default=default).upper()
 
     if value not in _VALID_LOG_LEVELS:
         allowed_levels = ", ".join(_VALID_LOG_LEVELS)

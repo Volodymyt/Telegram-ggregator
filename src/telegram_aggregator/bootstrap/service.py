@@ -79,3 +79,6 @@ def run_service() -> None:
         asyncio.run(runtime.run())
     except (SessionAuthorizationError, SessionPathError) as exc:
         raise SystemExit(str(exc)) from None
+    except Exception as exc:
+        logger.error("Service failed: %s", exc)
+        raise SystemExit(1) from None
