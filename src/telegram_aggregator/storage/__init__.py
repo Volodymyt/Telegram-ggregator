@@ -7,6 +7,7 @@ from telegram_aggregator.storage.errors import (
     StorageError,
 )
 from telegram_aggregator.storage.metadata import metadata
+from telegram_aggregator.storage.tables import event_records, message_records
 
 __all__ = [
     "build_engine",
@@ -14,4 +15,6 @@ __all__ = [
     "StorageError",
     "StorageConfigError",
     "StorageMigrationError",
+    "message_records",
+    "event_records",
 ]
