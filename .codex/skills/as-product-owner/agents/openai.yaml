@@ -1,0 +1,4 @@
+interface:
+  display_name: "As Product Owner"
+  short_description: "Apply the product owner role overlay"
+  default_prompt: "Use $as-product-owner $do-task 0009 to execute a planning task within the product owner role."

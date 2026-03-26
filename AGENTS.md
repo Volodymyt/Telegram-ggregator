@@ -17,3 +17,7 @@ Language policy:
 - Do not mix languages within the same sentence.
 
 DO NOT USE directories and files from directories provided in .codexignore! 
+
+Planning task lookup:
+- If the prompt only provides a planning task number such as `0009`, resolve it with `bin/find-planning-item` first.
+- If the helper is unavailable, search `Planning ID: 0009` in `docs/planning/active/` first and `docs/planning/archive/` second.

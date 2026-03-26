@@ -1,8 +1,8 @@
 # M0 Storage foundation
 
 Planning ID: 0012
-Status: Draft
-Last updated: 2026-03-15
+Status: Ready
+Last updated: 2026-03-16
 
 ## Goal
 
