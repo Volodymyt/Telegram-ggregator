@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import os
 from logging.config import fileConfig
+
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import async_engine_from_config
+
 from telegram_aggregator.storage.metadata import metadata
 
 config = context.config
@@ -21,7 +25,7 @@ def _get_database_url() -> str:
             "DATABASE_URL environment variable is required to run Alembic migrations. "
             "Set it before invoking `alembic upgrade head`."
         )
-    return url.replace("postgresql+asyncpg://", "postgresql://")
+    return url
 
 
 def run_migrations_offline() -> None:
@@ -41,20 +45,28 @@ def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = _get_database_url()
 
-    connectable = engine_from_config(
+    connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True,
-        )
-        with context.begin_transaction():
-            context.run_migrations()
+    async def do_migrations() -> None:
+        async with connectable.connect() as connection:
+            await connection.run_sync(_run_sync_migrations)
+        await connectable.dispose()
+
+    asyncio.run(do_migrations())
+
+
+def _run_sync_migrations(connection: object) -> None:
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
 
 
 if context.is_offline_mode():

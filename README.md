@@ -45,6 +45,12 @@ Run the canonical login entrypoint through the same container image.
 docker compose run --rm app python -m telegram_aggregator.login
 ```
 
+Apply database migrations before the first run or after pulling new revisions.
+
+```bash
+docker compose run --rm app alembic upgrade head
+```
+
 Inside the container, the canonical module paths remain `python -m telegram_aggregator` for the service and `python -m telegram_aggregator.login` for login.
 
 ## Codex Role Wrapper
