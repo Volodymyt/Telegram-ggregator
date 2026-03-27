@@ -1,8 +1,8 @@
 # M0 Storage foundation: schema baseline for message and event records
 
 Planning ID: 0014
-Status: Ready
-Last updated: 2026-03-15
+Status: Done
+Last updated: 2026-03-27
 
 ## Goal
 
