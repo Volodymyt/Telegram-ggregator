@@ -14,7 +14,18 @@ Copy the example environment file before running the service.
 cp .env.example .env
 ```
 
-For the supported Compose path, keep `TG_SESSION_PATH=/var/app/sessions/default.session`. The `app` service uses the repository bind mount, so both the service and the login command point to the writable local file `./sessions/default.session`.
+For the supported Compose path, keep `TG_SESSION_PATH=/var/app/sessions/default.session` and `CONFIG_PATH=/var/app/config.example.yaml`. The `app` service uses the repository bind mount, so both paths resolve to repository files on the host.
+
+The application runtime contract is `TG_API_ID`, `TG_API_HASH`, `TG_SESSION_PATH`, `DATABASE_URL`, `TARGET_CHANNEL`, `CONFIG_PATH`, `LOG_LEVEL`, and `DRY_RUN`.
+`TG_API_ID`, `TG_API_HASH`, and `TARGET_CHANNEL` may be left blank only while `DRY_RUN=1`.
+`POSTGRES_*` values in `.env` are only for the local Compose `postgres` service.
+
+The login command prompts for the phone number, login code, and 2FA password interactively when Telegram requires them.
+They are not part of the canonical environment contract.
+
+`DRY_RUN=1` disables all Telegram network I/O.
+Use it only for non-Telegram bootstrap and local verification paths.
+The checked-in `.env.example` is a dry-run bootstrap profile. Before using Telegram-backed startup or `python -m telegram_aggregator.login`, switch to `DRY_RUN=0` and fill the Telegram-facing values.
 
 Install Python dependencies locally only when you need repository tooling such as tests.
 

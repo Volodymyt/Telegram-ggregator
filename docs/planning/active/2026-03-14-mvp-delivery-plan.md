@@ -38,7 +38,7 @@ The following constraints are already fixed by the architecture and requirements
 - Candidate similarity uses `difflib.SequenceMatcher` with a threshold of `0.82`.
 - A repeated matching `start` signal more than 5 minutes after the original event start opens a new event.
 - A `clear` signal closes only an active event of the same `event_type` and is never published.
-- `DRY_RUN` remains a supported operator mode and must suppress Telegram side effects without bypassing intake, filtering, aggregation, or persistence logic.
+- `DRY_RUN` remains a supported operator mode and must not perform Telegram network I/O at all.
 - Restart recovery must cover durable work that can be left behind with `classification_status='candidate' and aggregation_status='queued'`, or `publish_status in ('queued', 'publishing')`.
 
 ## Investigation Findings
@@ -69,6 +69,7 @@ These defaults are chosen now to remove ambiguity before backlog decomposition.
 - Organize code by runtime component:
   - `bootstrap/`
   - `config/`
+  - `telegram/`
   - `storage/`
   - `reading/`
   - `processing/`
@@ -125,15 +126,15 @@ These defaults are chosen now to remove ambiguity before backlog decomposition.
 ### Operator Experience and Observability
 
 - The primary login flow is `python -m telegram_aggregator.login`.
-- `LOGIN=1` remains a compatibility path for containerized bootstrap.
+- Phone number, login code, and 2FA password are collected interactively by default and are not part of the canonical env contract.
 - Observability defaults to structured JSON logs plus a lightweight HTTP health endpoint.
 - The health endpoint should expose readiness at a high level for Telegram, Postgres, and worker liveness.
 - Config validation must support source identifiers given as `@username`, `t.me/...`, or numeric ids where supported, and target identifiers as username or numeric id.
-- `DRY_RUN` must exercise the normal pipeline up to publication decision while suppressing target-channel writes.
+- `DRY_RUN` must skip Telegram client initialization entirely while keeping non-Telegram runtime surfaces available for verification and future persisted-work recovery.
 
 ### Delivery Guardrails
 
-- Task decomposition must keep traceability to the documented YAML and environment contract, including `LOG_LEVEL`, `DRY_RUN`, queue sizes, normalization toggles, and login flows.
+- Task decomposition must keep traceability to the documented YAML and environment contract, including `LOG_LEVEL`, `DRY_RUN`, queue sizes, normalization toggles, and the dedicated login flow.
 - Capacity and operability tasks must not drop the MVP targets of at least 100 configured sources, 10 to 30 seconds normal end-to-end latency, and a small VPS deployment profile of `1 vCPU / 512 MB` or better.
 - Operational hardening tasks must keep secrets out of the image and preserve compatibility with reduced-privilege containers and, where practical for the MVP, a read-only root filesystem.
 
@@ -180,9 +181,9 @@ Future implementation and task decomposition should preserve these internal type
 
 These items must remain visible during task decomposition even when they do not dominate milestone naming:
 
-- M0 must cover config/runtime validation for source and target identifier formats, `LOG_LEVEL`, `DRY_RUN`, queue sizes, YAML toggles, and both login entry paths.
+- M0 must cover config/runtime validation for source and target identifier formats, `LOG_LEVEL`, `DRY_RUN`, queue sizes, YAML toggles, the dedicated login entrypoint, and existing-session startup behavior.
 - M1 must preserve `case_insensitive` and normalization-driven filter behavior from the configuration contract, not only the regex matching core.
-- M2 must keep `DRY_RUN` and attribution behavior testable in the first end-to-end publish slice.
+- M2 must keep attribution behavior testable independently of `DRY_RUN`, because `DRY_RUN` skips Telegram initialization entirely.
 - M3 must cover restart recovery for candidate rows waiting aggregation and for publication rows in `queued` or `publishing` states, not only candidate aggregation recovery.
 - M4 must include explicit verification for capacity, latency, runtime security posture, and final operator run instructions.
 
@@ -207,8 +208,8 @@ These items must remain visible during task decomposition even when they do not 
 
 ### 3. Intake and Processing
 
-- Telethon session startup.
-- Source subscription and message reading.
+- Telegram client bootstrap and session readiness checks.
+- Source subscription and message reading through the `telegram/` adapter and `reading/` flow.
 - Internal message normalization.
 - Include/exclude filter engine.
 - Processing queue and candidate classification.
@@ -226,7 +227,7 @@ These items must remain visible during task decomposition even when they do not 
 
 - Publish queue and serialized publish worker.
 - Payload formatting and attribution footer.
-- Telethon target-channel publish adapter.
+- Target-channel publish flow orchestrated by `publishing/` through the `telegram/` adapter.
 - Flood wait handling.
 - Restart-safe recovery of rows with `publish_status='queued'` and `publish_status='publishing'`.
 - Terminal failure handling and persisted retry state.
@@ -236,7 +237,7 @@ These items must remain visible during task decomposition even when they do not 
 
 - Docker/runtime alignment.
 - Environment and run instructions.
-- `DRY_RUN` verification.
+- `DRY_RUN` no-Telegram verification.
 - Health and readiness verification.
 - Capacity and latency verification against the MVP operating profile.
 - Integration scenarios for restart recovery and deduplication.
@@ -282,7 +283,7 @@ Exit criteria:
 - Duplicate `start` candidates within the active window become `suppressed_duplicate`.
 - Selected messages move through `tg_message.publish_status='queued'` before the publish worker claims them.
 - Text publication works with attribution.
-- `DRY_RUN` suppresses target-channel writes while preserving the same publish-decision path for verification.
+- `DRY_RUN` skips Telegram initialization entirely; publish-decision behavior must be verified through dedicated non-dry-run tests.
 - The first vertical slice is demoable end-to-end.
 
 ### M3 Full Event Lifecycle And Recovery
@@ -332,7 +333,7 @@ The later task backlog must cover the following scenarios explicitly:
 - include and exclude filters work in both `any` and `all` modes;
 - normalization changes matching behavior only through the documented pipeline;
 - stale source messages are marked `outdated` before filter evaluation;
-- `DRY_RUN` suppresses target publication without bypassing publish-decision logic;
+- `DRY_RUN` avoids all Telegram network I/O and remains verifiable through bootstrap and recovery-oriented checks;
 - similar `start` messages within 5 minutes map to one event;
 - a repeated `start` after 5 minutes opens a new event;
 - `clear` closes only an active event of the same `event_type`;

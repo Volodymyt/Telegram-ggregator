@@ -2,8 +2,8 @@
 
 Planning ID: 0001
 Milestone: M0
-Status: Active
-Last updated: 2026-03-15
+Status: Ready
+Last updated: 2026-03-16
 
 ## Goal
 
@@ -13,7 +13,7 @@ Establish the executable MVP baseline so later slices can add intake, aggregatio
 
 - Replace the legacy execution path with the canonical package root under `src/telegram_aggregator/`.
 - Align local and Docker runtime startup on one entrypoint contract.
-- Lock the env and YAML configuration contract, including both supported login paths.
+- Lock the env and YAML configuration contract, including the dedicated login entrypoint and normal startup expectations.
 - Establish the storage package surface, migration mechanism, and the initial durable schema baseline before runtime wiring depends on them.
 - Add the minimum storage repository boundary, startup readiness hooks, storage verification, runtime bootstrap ordering, worker lifecycle management, structured logging, lightweight health reporting, and test scaffolding.
 - Exclude Telegram intake, filter evaluation, candidate aggregation, and publication logic beyond the interfaces needed to bootstrap the service.
@@ -21,7 +21,7 @@ Establish the executable MVP baseline so later slices can add intake, aggregatio
 ## Steps
 
 1. Establish the canonical package and runtime contract so every later story builds on the same import and startup path.
-2. Define and validate the env and YAML contract, including `LOGIN=1` compatibility and the primary `python -m telegram_aggregator.login` flow.
+2. Define and validate the env and YAML contract, including interactive login prompts and the `python -m telegram_aggregator.login` flow.
 3. Lock the canonical storage package surface, Alembic integration, and the initial durable schema baseline.
 4. Add the minimum storage repository boundary, startup readiness hook, and storage verification so runtime bootstrap can consume one stable storage contract.
 5. Add bootstrap ordering, Telegram client bootstrap readiness, lifecycle management, health visibility, structured logs, and test scaffolding to make later slices executable and verifiable.
@@ -40,8 +40,8 @@ Establish the executable MVP baseline so later slices can add intake, aggregatio
 - The dependency baseline is explicit and reproducible for runtime, migrations, configuration loading, observability, and tests.
 - The service starts and stops cleanly through the canonical bootstrap path without placeholder runtime loops.
 - Config validation fails fast on invalid env or YAML input before the service enters steady-state startup.
-- Config validation covers source and target identifier formats, queue sizes, `LOG_LEVEL`, `DRY_RUN`, normalization toggles, filter mode semantics including the documented `all`-mode consistency rule, and both supported login modes.
-- Both supported login entry paths are executable and aligned on one session-bootstrap contract: normal startup works with an existing session file, and both `LOGIN=1` and `python -m telegram_aggregator.login` create or validate the configured session path with distinct operator-facing errors on failure.
+- Config validation covers source and target identifier formats, queue sizes, `LOG_LEVEL`, `DRY_RUN`, normalization toggles, per-group filter mode semantics including the documented `all`-mode consistency rule inside each filter group, and the dedicated login flow plus existing-session startup expectations.
+- The dedicated login entrypoint is executable and aligned with the session-bootstrap contract used by normal startup: normal startup works with an existing session file, `python -m telegram_aggregator.login` creates or validates the configured session path with distinct operator-facing errors on failure, and interactive phone/password prompts remain outside the env contract.
 - PostgreSQL connectivity, migration execution, and one initial durable schema baseline are wired through one canonical storage path before runtime bootstrap depends on them.
 - The storage layer exposes the minimum repository boundary and one reusable readiness hook needed for later reader, processing, aggregation, publish, and bootstrap work without reopening the storage contract.
 - Queue creation, worker-registration boundaries, and bootstrap ordering are explicit enough for later stories to attach concrete workers without changing the M0 runtime structure.
