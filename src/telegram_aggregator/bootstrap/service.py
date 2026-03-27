@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import signal
 from typing import TYPE_CHECKING
 
 from telegram_aggregator.config import (

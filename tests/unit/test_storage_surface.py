@@ -203,13 +203,3 @@ def test_alembic_env_target_metadata_is_canonical_metadata() -> None:
     assert imports_from_storage_metadata, (
         "alembic/env.py must import from telegram_aggregator.storage.metadata"
     )
-
-
-class _NullContextManager:
-    """Minimal context manager stub for alembic's begin_transaction()."""
-
-    def __enter__(self) -> "_NullContextManager":
-        return self
-
-    def __exit__(self, *_: object) -> None:
-        pass

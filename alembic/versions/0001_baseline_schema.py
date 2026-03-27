@@ -22,13 +22,13 @@ def upgrade() -> None:
             "started_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
         ),
         sa.Column(
             "last_seen_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
         ),
         sa.Column("ended_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("canonical_message_record_id", sa.BigInteger, nullable=True),
@@ -38,13 +38,13 @@ def upgrade() -> None:
             "created_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
         ),
     )
 
@@ -58,14 +58,14 @@ def upgrade() -> None:
         sa.Column("raw_text", sa.Text, nullable=True),
         sa.Column("normalized_text", sa.Text, nullable=True),
         sa.Column(
-            "has_media", sa.Boolean, nullable=False, server_default=sa.text("false")
+            "has_media", sa.Boolean, nullable=False, server_default="false"
         ),
         sa.Column("event_type", sa.Text, nullable=True),
         sa.Column("event_signal", sa.Text, nullable=True),
         sa.Column("candidate_signature", sa.Text, nullable=True),
         sa.Column("event_record_id", sa.BigInteger, nullable=True),
         sa.Column(
-            "status", sa.Text, nullable=False, server_default=sa.text("'received'")
+            "status", sa.Text, nullable=False, server_default="received"
         ),
         sa.Column("filter_reason", sa.Text, nullable=True),
         sa.Column("target_message_id", sa.BigInteger, nullable=True),
@@ -73,20 +73,20 @@ def upgrade() -> None:
             "publish_attempts",
             sa.Integer,
             nullable=False,
-            server_default=sa.text("0"),
+            server_default="0",
         ),
         sa.Column("last_error", sa.Text, nullable=True),
         sa.Column(
             "received_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.text("now()"),
+            server_default=sa.func.now(),
         ),
         sa.ForeignKeyConstraint(
             ["event_record_id"],
