@@ -6,6 +6,17 @@ from telegram_aggregator.storage.errors import (
     StorageMigrationError,
     StorageError,
 )
+
+from telegram_aggregator.storage.repository import (
+    insert_message_idempotent,
+    get_message_by_source,
+    get_message_by_id,
+    update_message_status,
+    insert_event,
+    get_event_by_id,
+    update_event,
+)
+
 from telegram_aggregator.storage.metadata import metadata
 from telegram_aggregator.storage.tables import event_records, message_records
 
@@ -17,4 +28,11 @@ __all__ = [
     "StorageMigrationError",
     "message_records",
     "event_records",
+    "insert_message_idempotent",
+    "get_message_by_source",
+    "get_message_by_id",
+    "update_message_status",
+    "insert_event",
+    "get_event_by_id",
+    "update_event",
 ]
