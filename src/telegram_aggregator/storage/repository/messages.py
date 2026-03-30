@@ -48,7 +48,6 @@ async def insert_message_idempotent(
     if row is not None:
         return dict(row)
 
-    # Row already existed — fetch and return it.
     existing = await get_message_by_source(
         conn,
         source_chat_id=source_chat_id,
