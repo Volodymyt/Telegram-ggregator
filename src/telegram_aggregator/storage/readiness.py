@@ -20,10 +20,6 @@ class ReadinessResult:
     db_reachable: bool
     migrations_current: bool
 
-    @property
-    def ready(self) -> bool:
-        return self.db_reachable and self.migrations_current
-
 
 async def check_db_reachable(engine: AsyncEngine) -> None:
     try:
