@@ -48,33 +48,7 @@ Use a compact format for each backlog item:
 
 These items intentionally stay free of canonical IDs and path lineage until they are promoted into separate planning files.
 
-Current active execution focus: [M0 Foundations Ready](active/01_0001_foundations_ready/0001_foundations_ready.md).
-
-### M1
-
-- [Draft] M1 Intake To Candidate
-  - Type: Epic
-  - Why it matters: Deliver the first durable slice from Telegram intake to candidate state without publication.
-  - Acceptance signal: The M1 exit criteria in the MVP delivery plan are satisfied.
-  - Links: [MVP delivery plan](active/2026-03-14-mvp-delivery-plan.md)
-
-- [Draft] M1 Source intake and message deduplication
-  - Type: Story
-  - Why it matters: Ensure source messages are read once, persisted once, and safely ignored on duplicate delivery.
-  - Acceptance signal: Telethon reads configured sources, persists incoming messages once, and deduplicates on `(source_chat_id, source_message_id)`.
-  - Links: Parent epic: M1 Intake To Candidate; [MVP delivery plan](active/2026-03-14-mvp-delivery-plan.md)
-
-- [Draft] M1 Normalization and filter engine
-  - Type: Story
-  - Why it matters: Preserve the documented matching semantics for include and exclude rules before candidate classification starts.
-  - Acceptance signal: Filter behavior covers `any` and `all` modes plus `case_insensitive` and normalization toggles against message text and media captions.
-  - Links: Parent epic: M1 Intake To Candidate; [MVP delivery plan](active/2026-03-14-mvp-delivery-plan.md)
-
-- [Draft] M1 Candidate classification pipeline
-  - Type: Story
-  - Why it matters: Convert accepted messages into durable candidate state with the metadata needed for later event aggregation.
-  - Acceptance signal: Queue-driven processing persists either `filtered_out` or `candidate` together with `event_type`, `event_signal`, and `candidate_signature`.
-  - Links: Parent epic: M1 Intake To Candidate; [MVP delivery plan](active/2026-03-14-mvp-delivery-plan.md)
+Current active execution focus: [M0 Foundations Ready](active/01_0001_foundations_ready/0001_foundations_ready.md). Promoted draft epic: [M1 Intake To Candidate](active/02_0024_intake_to_candidate/0024_intake_to_candidate.md).
 
 ### M2
 
