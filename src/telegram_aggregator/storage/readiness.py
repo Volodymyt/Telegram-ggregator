@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import sqlalchemy as sa
 from alembic.config import Config
@@ -11,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from telegram_aggregator.storage.errors import (
     StorageConfigError,
     StorageMigrationError,
-    StorageError,
 )
 
 
@@ -19,6 +19,10 @@ from telegram_aggregator.storage.errors import (
 class ReadinessResult:
     db_reachable: bool
     migrations_current: bool
+
+
+def _get_alembic_script_location() -> str:
+    return str(Path(__file__).resolve().parents[3] / "alembic")
 
 
 async def check_db_reachable(engine: AsyncEngine) -> None:
@@ -30,12 +34,10 @@ async def check_db_reachable(engine: AsyncEngine) -> None:
 
 
 async def check_migrations_current(engine: AsyncEngine) -> None:
-    import pathlib
-
     alembic_cfg = Config()
     alembic_cfg.set_main_option(
         "script_location",
-        str(pathlib.Path(__file__).parents[4] / "alembic"),
+        _get_alembic_script_location(),
     )
 
     try:
@@ -63,13 +65,6 @@ async def check_migrations_current(engine: AsyncEngine) -> None:
 
 
 async def check_storage_readiness(engine: AsyncEngine) -> ReadinessResult:
-    try:
-        await check_db_reachable(engine)
-    except StorageError:
-        return ReadinessResult(db_reachable=False, migrations_current=False)
-
-    try:
-        await check_migrations_current(engine)
-        return ReadinessResult(db_reachable=True, migrations_current=True)
-    except StorageError:
-        return ReadinessResult(db_reachable=True, migrations_current=False)
+    await check_db_reachable(engine)
+    await check_migrations_current(engine)
+    return ReadinessResult(db_reachable=True, migrations_current=True)

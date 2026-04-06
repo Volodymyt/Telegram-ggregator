@@ -6,16 +6,8 @@ from telegram_aggregator.storage.errors import (
     StorageMigrationError,
     StorageError,
 )
-
-from telegram_aggregator.storage.repository import (
-    insert_message_idempotent,
-    get_message_by_source,
-    get_message_by_id,
-    update_message_status,
-    insert_event,
-    get_event_by_id,
-    update_event,
-)
+from telegram_aggregator.storage.facade import Repositories, Storage, build_storage
+from telegram_aggregator.storage.repository import EventRepository, MessageRepository
 
 from telegram_aggregator.storage.readiness import (
     check_storage_readiness,
@@ -33,18 +25,15 @@ __all__ = [
     "StorageError",
     "StorageConfigError",
     "StorageMigrationError",
+    "Storage",
+    "Repositories",
+    "build_storage",
+    "MessageRepository",
+    "EventRepository",
     "message_records",
     "event_records",
-    "insert_message_idempotent",
-    "get_message_by_source",
-    "get_message_by_id",
-    "update_message_status",
-    "insert_event",
-    "get_event_by_id",
-    "update_event",
     "check_storage_readiness",
     "check_db_reachable",
     "check_migrations_current",
-    "ReadinessResult",
     "ReadinessResult",
 ]

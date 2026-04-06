@@ -171,5 +171,8 @@ def test_run_login_surfaces_unexpected_errors_as_clean_exit(
         ),
     )
 
-    with pytest.raises(SystemExit, match="1"):
+    with pytest.raises(
+        SystemExit,
+        match="Telegram session path is not usable: .*network is unreachable",
+    ):
         run_login()

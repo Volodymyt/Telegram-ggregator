@@ -13,69 +13,67 @@ class EventRepository:
     def __init__(self, conn: AsyncConnection) -> None:
         self._conn = conn
 
-async def insert_event(
-    self,
-    *,
-    target_channel: str,
-    event_type: str,
-    state: str = "open",
-    canonical_message_record_id: int | None = None,
-) -> dict[str, Any]:
-    stmt = (
-        sa.insert(event_records)
-        .values(
-            target_channel=target_channel,
-            event_type=event_type,
-            state=state,
-            canonical_message_record_id=canonical_message_record_id,
+    async def insert_event(
+        self,
+        *,
+        target_channel: str,
+        event_type: str,
+        state: str = "open",
+        canonical_message_record_id: int | None = None,
+    ) -> dict[str, Any]:
+        stmt = (
+            sa.insert(event_records)
+            .values(
+                target_channel=target_channel,
+                event_type=event_type,
+                state=state,
+                canonical_message_record_id=canonical_message_record_id,
+            )
+            .returning(*event_records.c)
         )
-        .returning(*event_records.c)
-    )
-    result = await self._conn.execute(stmt)
-    row = result.mappings().first()
-    assert row is not None
-    return dict(row)
+        result = await self._conn.execute(stmt)
+        row = result.mappings().first()
+        assert row is not None
+        return dict(row)
 
-async def get_event_by_id(self, *, event_id: int) -> dict[str, Any] | None:
-    stmt = sa.select(event_records).where(event_records.c.id == event_id)
-    result = await self._conn.execute(stmt)
-    row = result.mappings().first()
-    return dict(row) if row is not None else None
+    async def get_event_by_id(self, *, event_id: int) -> dict[str, Any] | None:
+        stmt = sa.select(event_records).where(event_records.c.id == event_id)
+        result = await self._conn.execute(stmt)
+        row = result.mappings().first()
+        return dict(row) if row is not None else None
 
-async def update_event(
-    self,
-    *,
-    event_id: int,
-    state: str | None = None,
-    last_seen_at: datetime | None = None,
-    ended_at: datetime | None = None,
-    canonical_message_record_id: int | None = None,
-    published_target_message_id: int | None = None,
-    publish_status: str | None = None,
-) -> dict[str, Any] | None:
-    values: dict[str, Any] = {}
-    if state is not None:
-        values["state"] = state
-    if last_seen_at is not None:
-        values["last_seen_at"] = last_seen_at
-    if ended_at is not None:
-        values["ended_at"] = ended_at
-    if canonical_message_record_id is not None:
-        values["canonical_message_record_id"] = canonical_message_record_id
-    if published_target_message_id is not None:
-        values["published_target_message_id"] = published_target_message_id
-    if publish_status is not None:
-        values["publish_status"] = publish_status
+    async def update_event(
+        self,
+        *,
+        event_id: int,
+        state: str | None = None,
+        last_seen_at: datetime | None = None,
+        ended_at: datetime | None = None,
+        canonical_message_record_id: int | None = None,
+        published_target_message_id: int | None = None,
+        publish_status: str | None = None,
+    ) -> dict[str, Any] | None:
+        candidate_values: dict[str, Any] = {
+            "state": state,
+            "last_seen_at": last_seen_at,
+            "ended_at": ended_at,
+            "canonical_message_record_id": canonical_message_record_id,
+            "published_target_message_id": published_target_message_id,
+            "publish_status": publish_status,
+        }
+        values = {
+            key: value for key, value in candidate_values.items() if value is not None
+        }
 
-    if not values:
-        return await self.get_by_id(event_id=event_id)
+        if not values:
+            return await self.get_event_by_id(event_id=event_id)
 
-    stmt = (
-        sa.update(event_records)
-        .where(event_records.c.id == event_id)
-        .values(**values)
-        .returning(*event_records.c)
-    )
-    result = await self._conn.execute(stmt)
-    row = result.mappings().first()
-    return dict(row) if row is not None else None
+        stmt = (
+            sa.update(event_records)
+            .where(event_records.c.id == event_id)
+            .values(**values)
+            .returning(*event_records.c)
+        )
+        result = await self._conn.execute(stmt)
+        row = result.mappings().first()
+        return dict(row) if row is not None else None
