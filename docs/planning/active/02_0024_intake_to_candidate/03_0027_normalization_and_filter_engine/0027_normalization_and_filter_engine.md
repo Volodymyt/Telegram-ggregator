@@ -18,10 +18,10 @@ Preserve the documented matching semantics for intake classification and formali
 
 ## Steps
 
-1. Add the reusable normalization helpers that are controlled by the existing per-filter-group toggles and are later reused by the processing worker when persisting `normalized_text`.
-2. Implement filter-group evaluation in configuration order with explicit handling for `any`, `all`, and exclude blocking.
-3. Extend the typed YAML model, semantic validation, and canonical runtime examples with `runtime.classification_stale_after_seconds`.
-4. Add focused verification for normalization toggles, caption matching, group-order precedence, runtime `all`-mode behavior, contract validation for `classification_stale_after_seconds`, and the empty-exclude-list edge case.
+1. Implement [M1 Normalization and filter engine: shared normalization helpers and toggle contract](tasks/01_0037_shared_normalization_helpers_and_toggle_contract.md) to define the reusable processing-owned normalization pipeline for NFKC, lowercasing, trimming, whitespace collapse, and `ё` to `е`.
+2. Implement [M1 Normalization and filter engine: filter-group evaluation semantics](tasks/02_0038_filter_group_evaluation_semantics.md) to evaluate include and exclude rules in configuration order with the documented `any`, `all`, and first-matching-group behavior.
+3. Implement [M1 Normalization and filter engine: runtime stale-classification contract extension](tasks/03_0039_runtime_stale_classification_contract_extension.md) to extend the typed YAML runtime contract and canonical examples with `runtime.classification_stale_after_seconds`.
+4. Finish with [M1 Normalization and filter engine: normalization and filter verification](tasks/04_0040_normalization_and_filter_verification.md) to protect the shared text-normalization helpers, filter semantics, and config validation with focused tests.
 
 ## Risks
 

@@ -19,10 +19,10 @@ Realign the canonical persistence contract to the locked `tg_message` and `event
 
 ## Steps
 
-1. Define the canonical `tg_message` and `event` schema metadata with the locked M1 fields, nullability, constraints, indexes, and the renamed `event_id` relation surface.
-2. Update the storage facade and repository boundary so later M1 stories can create, fetch, and update rows against the new split-status contract without exposing legacy `event_record_id` names.
-3. Adjust migration and readiness coverage so the database contract stays queryable and verifiable after the table rename, relation rename, and status-model change.
-4. Refresh storage-focused tests and planning references that still assume `message_records`, `event_records`, or the old single-status/`event_record_id` contract.
+1. Implement [M1 Intake state contract alignment: canonical schema metadata and relation surface](tasks/01_0029_canonical_schema_metadata_and_relation_surface.md) to define the locked `tg_message` and `event` contract with the split status axes and canonical `event_id` relation names.
+2. Implement [M1 Intake state contract alignment: storage facade and repository boundary update](tasks/02_0030_storage_facade_and_repository_boundary_update.md) to expose the canonical persistence boundary for later M1 stories without leaking legacy `event_record_id` names.
+3. Implement [M1 Intake state contract alignment: migration and readiness contract alignment](tasks/03_0031_migration_and_readiness_contract_alignment.md) to keep database migrations, startup readiness, and contract checks aligned with the renamed tables and state model.
+4. Finish with [M1 Intake state contract alignment: verification and reference cleanup](tasks/04_0032_verification_and_reference_cleanup.md) to protect the realigned storage contract with tests and remove legacy planning references inside this story tree.
 
 ## Risks
 

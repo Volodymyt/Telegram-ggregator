@@ -20,10 +20,11 @@ Turn persisted intake rows into durable `outdated`, `filtered_out`, or `candidat
 
 ## Steps
 
-1. Wire the processing worker into the canonical runtime queue boundary introduced in M0 and add a startup recovery scan for persisted `tg_message` rows still in `classification_status='pending'`.
-2. Load each queued or recovered `tg_message` row from storage and short-circuit to `outdated` when the row is older than `classification_stale_after_seconds`.
-3. For fresh rows, compute and persist `normalized_text`, then apply the filter engine and persist either `filtered_out` or `candidate` with the typed match metadata.
-4. Transition candidate rows to `aggregation_status='queued'` as the durable M2 handoff without building `candidate_signature` or performing event deduplication in M1.
+1. Implement [M1 Candidate classification pipeline: processing worker wiring and startup recovery](tasks/01_0041_processing_worker_wiring_and_startup_recovery.md) to attach the processing worker to the canonical runtime queue boundary and recover persisted `pending` rows on startup.
+2. Implement [M1 Candidate classification pipeline: stale-message short-circuit](tasks/02_0042_stale_message_short_circuit.md) to load each queued or recovered `tg_message` row and mark rows older than `classification_stale_after_seconds` as `outdated` before any filter work.
+3. Implement [M1 Candidate classification pipeline: fresh-row normalization and filter classification](tasks/03_0043_fresh_row_normalization_and_filter_classification.md) to compute processing-owned `normalized_text` for fresh rows and persist either `filtered_out` or `candidate` with typed match metadata.
+4. Implement [M1 Candidate classification pipeline: candidate metadata and aggregation handoff](tasks/04_0044_candidate_metadata_and_aggregation_handoff.md) to persist `event_type` and `event_signal` for candidates and transition them to `aggregation_status='queued'`.
+5. Finish with [M1 Candidate classification pipeline: classification pipeline verification](tasks/05_0045_classification_pipeline_verification.md) to protect queue recovery, stale handling, fresh classification, and aggregation handoff with focused tests.
 
 ## Risks
 

@@ -18,10 +18,11 @@ Persist newly delivered Telegram source messages exactly once and enqueue only n
 
 ## Steps
 
-1. Define the reader-owned intake mapping from Telethon message events into the canonical persisted source-message fields, including the convention that `raw_text` stores either the message text or the media caption surface.
-2. Wire configured source subscription into the runtime bootstrap without bypassing the existing Telethon adapter boundary.
-3. Persist incoming messages through the realigned storage contract with initial `classification_status='pending'`, `aggregation_status='new'`, and `publish_status='new'`.
-4. Enqueue only first-seen rows for downstream processing and make duplicate deliveries a no-op beyond safe dedup confirmation.
+1. Implement [M1 Source intake and message deduplication: Telegram source subscription and adapter boundary](tasks/01_0033_telegram_source_subscription_and_adapter_boundary.md) to wire configured Telegram sources through the canonical runtime path without bypassing the existing Telethon adapter boundary.
+2. Implement [M1 Source intake and message deduplication: intake mapping and raw text surface](tasks/02_0034_intake_mapping_and_raw_text_surface.md) to normalize Telethon events into the canonical persisted intake shape, including the `raw_text` convention for message text and media captions.
+3. Implement [M1 Source intake and message deduplication: insert-once source persistence](tasks/03_0035_insert_once_source_persistence.md) to persist new `tg_message` rows with the initial M1 state contract and safe deduplication on `(source_chat_id, source_message_id)`.
+4. Implement [M1 Source intake and message deduplication: queue enqueue and duplicate delivery handling](tasks/04_0036_queue_enqueue_and_duplicate_delivery_handling.md) to enqueue only first-seen rows and make duplicate deliveries a durable no-op beyond the insert result.
+5. Finish with [M1 Source intake and message deduplication: intake deduplication verification](tasks/05_0046_intake_deduplication_verification.md) to protect intake mapping, insert-once persistence, and queue no-op duplicate handling with focused tests.
 
 ## Risks
 
