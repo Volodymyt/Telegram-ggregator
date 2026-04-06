@@ -6,37 +6,40 @@ Last updated: 2026-04-06
 
 ## Goal
 
-Turn persisted intake rows into durable `outdated`, `filtered_out`, or `candidate` state through the processing queue, and stop at the aggregation handoff boundary without starting event or publish behavior.
+Turn persisted intake rows into durable `outdated`, `filtered_out`, or `candidate` state through the processing queue, persist processing-owned `normalized_text` and typed match metadata, and stop at the aggregation handoff boundary without starting event or publish behavior.
 
 ## Scope
 
-- Implement the processing worker that consumes queued `tg_message` identifiers and loads the persisted intake record before classification.
+- Implement the processing worker that consumes queued `tg_message` identifiers, recovers persisted `pending` rows on startup, and loads the persisted intake record before classification.
 - Apply the explicit stale-message rule before any filter evaluation.
+- Compute and persist processing-owned `normalized_text` for fresh rows before filter classification.
 - Persist `classification_status='outdated'` for stale rows without filter or candidate processing.
-- Persist `classification_status='filtered_out'` or `classification_status='candidate'` for fresh rows, and capture `event_type`, `event_signal`, and `candidate_signature` for candidates.
+- Persist `classification_status='filtered_out'` or `classification_status='candidate'` for fresh rows, and capture `event_type` and `event_signal` for candidates.
 - Mark candidate rows with `aggregation_status='queued'` as the only durable handoff into later M2 and M3 aggregation work.
-- Exclude event creation, duplicate suppression, `clear` lifecycle handling, publish-job creation, and target-channel publication.
+- Exclude candidate signature generation, event creation, duplicate suppression, `clear` lifecycle handling, publish-job creation, and target-channel publication.
 
 ## Steps
 
-1. Wire the processing worker into the canonical runtime queue boundary introduced in M0.
-2. Load each queued `tg_message` row from storage and short-circuit to `outdated` when the row is older than `classification_stale_after_seconds`.
-3. For fresh rows, apply the filter engine and persist either `filtered_out` or `candidate` with the typed match metadata.
-4. Build `candidate_signature` from normalized text after stripping URLs, usernames, punctuation, and repeated whitespace, then persist `aggregation_status='queued'` for later aggregation.
+1. Wire the processing worker into the canonical runtime queue boundary introduced in M0 and add a startup recovery scan for persisted `tg_message` rows still in `classification_status='pending'`.
+2. Load each queued or recovered `tg_message` row from storage and short-circuit to `outdated` when the row is older than `classification_stale_after_seconds`.
+3. For fresh rows, compute and persist `normalized_text`, then apply the filter engine and persist either `filtered_out` or `candidate` with the typed match metadata.
+4. Transition candidate rows to `aggregation_status='queued'` as the durable M2 handoff without building `candidate_signature` or performing event deduplication in M1.
 
 ## Risks
 
 - If the stale check runs after filter evaluation, M1 will violate the delivery-plan rule that stale rows never enter filter or candidate processing.
-- Persisting `candidate_signature` anywhere other than the processing handoff can split ownership between M1 and later aggregation stories.
+- Leaving `normalized_text` ownership ambiguous between the reader and processing worker can cause M1 classification and M2 event deduplication to diverge.
+- Building `candidate_signature` inside M1 would split ownership between intake classification and later event deduplication.
+- Missing startup recovery for persisted `pending` rows can leave durable intake work stranded after a restart.
 - Starting even a minimal event or publish path here would blur the M1/M2 milestone boundary and make later acceptance hard to reason about.
 
 ## Acceptance Criteria
 
-- Queue-driven intake and processing run end-to-end without publication.
+- Queue-driven intake and processing run end-to-end without publication, and startup recovery picks up persisted `pending` rows left behind before classification.
 - Messages already stale before classification are marked `outdated` without filter or candidate processing.
-- Fresh rows become either `filtered_out` or `candidate` based on the documented filter engine.
-- Candidate classification persists `event_type`, `event_signal`, and `candidate_signature`.
-- Candidate rows transition to `aggregation_status='queued'` and stop there until later aggregation stories consume them.
+- Fresh rows persist processing-owned `normalized_text` before filter classification and then become either `filtered_out` or `candidate` based on the documented filter engine.
+- Candidate classification persists `event_type` and `event_signal` for matched rows.
+- Candidate rows transition to `aggregation_status='queued'` and stop there until later aggregation stories build `candidate_signature` from persisted `normalized_text` and consume them.
 
 ## Links
 

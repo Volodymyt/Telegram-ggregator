@@ -112,7 +112,7 @@ flowchart LR
 ### Message Reader
 
 - Registers Telethon `NewMessage` handlers for configured sources.
-- Normalizes incoming Telethon events into an internal message record shape.
+- Maps incoming Telethon events into an internal message record shape without owning text normalization.
 - Persists newly seen source messages with initial processing state.
 - Pushes new record identifiers into the processing queue.
 
@@ -135,12 +135,13 @@ The reader is intentionally thin. It does not implement Telegram transport, webs
 
 - Pulls message record identifiers from the processing queue.
 - Loads the persisted message record from Postgres.
+- Computes and persists `normalized_text` from the stored text or caption surface before filter classification.
 - Applies include and exclude filters.
 - Selects the matched typed include rule that classifies the message.
-- Updates status for filtered-out messages.
-- Marks matching messages as `candidate` and pushes their identifiers into the candidate queue.
+- Updates classification state for stale or filtered-out messages.
+- Marks matching messages as `candidate`, persists the matched `event_type` and `event_signal`, and queues them for later aggregation.
 
-The processing worker does not perform deduplication, event grouping, source arbitration, or publication decisions.
+The processing worker does not perform candidate signature generation, deduplication, event grouping, source arbitration, or publication decisions.
 
 ### Filter Rules
 
@@ -165,7 +166,7 @@ The processing worker does not perform deduplication, event grouping, source arb
 - Consumes candidate identifiers from the candidate queue.
 - Runs a periodic Postgres recovery scan for `candidate` rows that were not handled in memory.
 - Atomically claims candidate rows before event-level deduplication and publication handoff.
-- Builds a candidate signature from normalized text after stripping URLs, usernames, punctuation, and repeated whitespace.
+- Builds a candidate signature from persisted `normalized_text` after stripping URLs, usernames, punctuation, and repeated whitespace.
 - Uses event-level deduplication within the same `target_channel` and `event_type`.
 - Matches candidate signatures against open events using Python `difflib.SequenceMatcher` ratio on the normalized signature text.
 - Treats signatures with a similarity ratio of `0.82` or higher as the same event when the open event started no more than 5 minutes earlier.
@@ -216,7 +217,7 @@ The processing worker does not perform deduplication, event grouping, source arb
 
 Recommended internal types for the implementation:
 
-- `CandidateMessage`: a `message_record` that matched one typed include rule and is awaiting aggregation.
+- `CandidateMessage`: a `tg_message` row that matched one typed include rule and is awaiting aggregation.
 - `EventSignal`: `start | clear`.
 - `EventRecord`: the logical event tracked across one or more candidate messages.
 - `PublicationJob`: the selected message and target metadata ready for the publish worker.
@@ -225,7 +226,7 @@ Recommended internal types for the implementation:
 
 The MVP should keep persistence centered on source messages and logical events.
 
-Recommended primary table: `message_records`
+Recommended primary table: `tg_message`
 
 - `id`
 - `source_chat_id`
@@ -238,8 +239,10 @@ Recommended primary table: `message_records`
 - `event_type`
 - `event_signal`
 - `candidate_signature`
-- `event_record_id`
-- `status`
+- `event_id`
+- `classification_status`
+- `aggregation_status`
+- `publish_status`
 - `filter_reason`
 - `target_message_id`
 - `publish_attempts`
@@ -247,26 +250,37 @@ Recommended primary table: `message_records`
 - `received_at`
 - `updated_at`
 
-Recommended message status set:
+Recommended `tg_message.classification_status` set:
 
-- `received`
+- `pending`
+- `outdated`
 - `filtered_out`
 - `candidate`
+
+Recommended `tg_message.aggregation_status` set:
+
+- `new`
+- `queued`
 - `suppressed_duplicate`
-- `selected_for_publish`
-- `publishing`
-- `published`
-- `publish_failed`
+- `selected`
 - `clear_processed`
 - `orphan_clear`
+
+Recommended `tg_message.publish_status` set:
+
+- `new`
+- `queued`
+- `publishing`
+- `published`
+- `failed`
 
 Recommended constraints and indexes:
 
 - unique index on `(source_chat_id, source_message_id)`
-- index on `status`
-- index on `(event_type, status, received_at)`
+- index on `classification_status`
+- index on `(event_type, classification_status, received_at)`
 
-Recommended secondary table: `event_records`
+Recommended secondary table: `event`
 
 - `id`
 - `target_channel`
@@ -275,7 +289,7 @@ Recommended secondary table: `event_records`
 - `started_at`
 - `last_seen_at`
 - `ended_at`
-- `canonical_message_record_id`
+- `canonical_tg_message_id`
 - `published_target_message_id`
 - `publish_status`
 - `created_at`
@@ -292,7 +306,7 @@ Recommended publish status set:
 - `published`
 - `failed`
 
-No separate join table is required for the MVP. The durable relation between source messages and logical events is `message_records.event_record_id`.
+No separate join table is required for the MVP. The durable relation between source messages and logical events is `tg_message.event_id`.
 
 ## Runtime Flows
 
@@ -358,32 +372,32 @@ sequenceDiagram
     participant Publisher as Telegram Publisher
 
     Telegram-->>Reader: new source message event
-    Reader->>Store: insert message with status=received
+    Reader->>Store: insert tg_message with classification_status=pending, aggregation_status=new, publish_status=new
     alt already exists
         Store-->>Reader: duplicate source message
         Reader-->>Reader: log and stop
     else new record
-        Store-->>Reader: message_record_id
-        Reader->>ProcQueue: enqueue message_record_id
-        ProcQueue->>ProcWorker: dequeue message_record_id
-        ProcWorker->>Store: load message record
-        ProcWorker->>ProcWorker: apply filters and select typed rule
+        Store-->>Reader: tg_message_id
+        Reader->>ProcQueue: enqueue tg_message_id
+        ProcQueue->>ProcWorker: dequeue tg_message_id
+        ProcWorker->>Store: load tg_message row
+        ProcWorker->>ProcWorker: normalize text, apply filters, and select typed rule
         alt filtered out
-            ProcWorker->>Store: update status=filtered_out
+            ProcWorker->>Store: update classification_status=filtered_out
         else candidate
-            ProcWorker->>Store: update status=candidate with event_type and event_signal
-            ProcWorker->>CandQueue: enqueue message_record_id
+            ProcWorker->>Store: update classification_status=candidate, aggregation_status=queued, event_type, event_signal, normalized_text
+            ProcWorker->>CandQueue: enqueue tg_message_id
             CandQueue->>Agg: wake up aggregation
             Agg->>Store: claim candidate row
             Agg->>Store: find matching open event
             alt new start event
-                Agg->>Store: create event_record and update status=selected_for_publish
+                Agg->>Store: create event and update aggregation_status=selected
                 Agg->>PubQueue: enqueue publication job
                 PubQueue->>PubWorker: dequeue publication job
-                PubWorker->>Store: update status=publishing
+                PubWorker->>Store: update publish_status=publishing
                 PubWorker->>Publisher: publish to target channel
                 Publisher-->>PubWorker: target_message_id
-                PubWorker->>Store: update message=published and event publish_status=published
+                PubWorker->>Store: update tg_message.publish_status=published and event.publish_status=published
             end
         end
     end
@@ -400,10 +414,10 @@ sequenceDiagram
     Agg->>Store: load open event for same target and event_type
     Agg->>Agg: compare candidate signature with SequenceMatcher
     alt similarity >= 0.82 and event age <= 5 minutes
-        Agg->>Store: link message to event and update status=suppressed_duplicate
+        Agg->>Store: link tg_message to event and update aggregation_status=suppressed_duplicate
         Agg->>Store: update event.last_seen_at
     else similarity below threshold or event too old
-        Agg->>Store: create new open event and update status=selected_for_publish
+        Agg->>Store: create new open event and update aggregation_status=selected
     end
 ```
 
@@ -418,9 +432,9 @@ sequenceDiagram
     Agg->>Store: find open event by target and event_type
     alt matching open event exists
         Agg->>Store: close event with ended_at=message.received_at
-        Agg->>Store: link message to event and update status=clear_processed
+        Agg->>Store: link tg_message to event and update aggregation_status=clear_processed
     else no matching event
-        Agg->>Store: update status=orphan_clear
+        Agg->>Store: update aggregation_status=orphan_clear
     end
 ```
 
@@ -434,14 +448,14 @@ sequenceDiagram
     participant PubQueue as Publish Queue
 
     Boot->>Agg: start recovery loop
-    Agg->>Store: scan status=candidate rows
+    Agg->>Store: scan classification_status=candidate and aggregation_status=queued rows
     loop for each unclaimed candidate
         Agg->>Store: claim candidate row
         Agg->>Store: evaluate event match or create event
-        alt selected_for_publish
+        alt aggregation_status=selected
             Agg->>PubQueue: enqueue publication job
         else duplicate or clear
-            Agg->>Store: persist final candidate status
+            Agg->>Store: persist final aggregation_status
         end
     end
 ```
@@ -465,7 +479,7 @@ sequenceDiagram
         PubWorker->>Publisher: publish fallback variant
     else terminal error
         Publisher-->>PubWorker: terminal error
-        PubWorker->>Store: update message=publish_failed and event publish_status=failed
+        PubWorker->>Store: update tg_message.publish_status=failed and event.publish_status=failed
     end
 ```
 

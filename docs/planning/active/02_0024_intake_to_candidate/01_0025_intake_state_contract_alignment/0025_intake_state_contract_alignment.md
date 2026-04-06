@@ -12,16 +12,17 @@ Realign the canonical persistence contract to the locked `tg_message` and `event
 
 - Replace the current `message_records` and `event_records` schema contract with the locked `tg_message` and `event` tables.
 - Split `tg_message` progress into `classification_status`, `aggregation_status`, and `publish_status` instead of one overloaded message status field.
+- Rename the message-to-event relation surface from legacy `event_record_id` to canonical `event_id`, including the FK constraint and related metadata names.
 - Preserve idempotent source-message persistence on `(source_chat_id, source_message_id)` and keep explicit transaction boundaries in the storage facade.
 - Update repository primitives, storage metadata, migrations, readiness checks, and storage tests to the new canonical naming and state model.
 - Exclude Telegram reader behavior, filter evaluation, candidate claiming, event deduplication, and publication logic.
 
 ## Steps
 
-1. Define the canonical `tg_message` and `event` schema metadata with the locked M1 fields, nullability, constraints, and indexes.
-2. Update the storage facade and repository boundary so later M1 stories can create, fetch, and update rows against the new split-status contract.
-3. Adjust migration and readiness coverage so the database contract stays queryable and verifiable after the rename and status-model change.
-4. Refresh storage-focused tests and planning references that still assume `message_records` and `event_records`.
+1. Define the canonical `tg_message` and `event` schema metadata with the locked M1 fields, nullability, constraints, indexes, and the renamed `event_id` relation surface.
+2. Update the storage facade and repository boundary so later M1 stories can create, fetch, and update rows against the new split-status contract without exposing legacy `event_record_id` names.
+3. Adjust migration and readiness coverage so the database contract stays queryable and verifiable after the table rename, relation rename, and status-model change.
+4. Refresh storage-focused tests and planning references that still assume `message_records`, `event_records`, or the old single-status/`event_record_id` contract.
 
 ## Risks
 
@@ -33,6 +34,7 @@ Realign the canonical persistence contract to the locked `tg_message` and `event
 
 - The canonical persistence model for active planning and implementation is `tg_message` and `event`, not `message_records` and `event_records`.
 - `tg_message` exposes `classification_status`, `aggregation_status`, and `publish_status` with the locked status sets from the delivery plan.
+- The canonical relation from `tg_message` to `event` is `event_id`, and migrations plus storage metadata no longer expose legacy FK, index, or constraint names tied to `event_record_id`.
 - Idempotent source-message persistence remains defined on `(source_chat_id, source_message_id)`.
 - The storage facade and repositories remain SQLAlchemy Core based and reusable by later reader, processing, aggregation, and publish stories without redesign.
 - Migration and storage verification cover the realigned schema and repository contract.

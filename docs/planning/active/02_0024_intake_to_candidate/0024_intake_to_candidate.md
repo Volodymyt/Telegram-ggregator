@@ -15,7 +15,7 @@ Deliver the first durable MVP slice from Telegram intake to candidate state with
 - Read new source messages from Telegram through the canonical runtime path, persist them once, and ignore duplicate deliveries safely on `(source_chat_id, source_message_id)`.
 - Add the shared normalization and filter engine for include and exclude rules across message text and media captions.
 - Extend the YAML runtime contract with one explicit stale-classification window so `outdated` handling is deterministic and operator-visible.
-- Classify persisted intake rows as `outdated`, `filtered_out`, or `candidate`, and persist `event_type`, `event_signal`, `candidate_signature`, and the aggregation handoff state.
+- Classify persisted intake rows as `outdated`, `filtered_out`, or `candidate`, and persist `normalized_text`, `event_type`, `event_signal`, and the aggregation handoff state.
 - Exclude event deduplication, `clear` lifecycle handling, publish jobs, publish recovery, and all target-channel publication behavior.
 
 ## Steps
@@ -30,7 +30,7 @@ Deliver the first durable MVP slice from Telegram intake to candidate state with
 - The current M0 storage and repository artifacts still encode the older `message_records` and `event_records` contract, so M1 can inherit schema churn unless the realignment story lands first.
 - `outdated` handling is required by the delivery plan but not yet represented in the YAML runtime contract, so leaving the stale rule implicit would push a product decision into implementation.
 - The current runtime still has a thin queue-only bootstrap path, which can blur the boundary between reader, processing, and later aggregation concerns if M1 stories are allowed to overlap.
-- Candidate metadata can drift between the filter engine and later aggregation work unless `event_type`, `event_signal`, and `candidate_signature` are persisted once and treated as the canonical handoff.
+- Candidate metadata can drift between M1 classification and later aggregation unless `normalized_text`, `event_type`, and `event_signal` are persisted once and `candidate_signature` is built only by M2 from that persisted handoff.
 
 ## Acceptance Criteria
 
@@ -40,8 +40,8 @@ Deliver the first durable MVP slice from Telegram intake to candidate state with
 - Filter behavior covers `any` and `all` modes.
 - Filter behavior covers `case_insensitive` and normalization toggles from the YAML contract.
 - Messages already stale before classification are marked `outdated` without filter or candidate processing.
-- Candidate classification persists `event_type`, `event_signal`, and `candidate_signature`.
-- Queue-driven intake and processing operate end-to-end without publication.
+- Candidate classification persists `normalized_text`, `event_type`, and `event_signal`.
+- Queue-driven intake and processing operate end-to-end without publication, including restart recovery for persisted `pending` intake rows.
 
 ## Links
 

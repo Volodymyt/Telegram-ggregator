@@ -11,14 +11,14 @@ Persist newly delivered Telegram source messages exactly once and enqueue only n
 ## Scope
 
 - Register the configured Telegram sources through the canonical runtime and reader boundary.
-- Normalize incoming Telethon message events into one intake record shape that captures source identifiers, source metadata, raw text or caption surface, media presence, and receive time.
+- Map incoming Telethon message events into one intake record shape that captures source identifiers, source metadata, the raw text surface stored in `raw_text` (message text or media caption), media presence, and receive time.
 - Persist new source messages with the initial M1 state contract and ignore duplicate deliveries safely on `(source_chat_id, source_message_id)`.
 - Enqueue only newly created `tg_message` rows into the processing queue.
 - Exclude filter evaluation, stale classification, event-level deduplication, and any publish behavior.
 
 ## Steps
 
-1. Define the reader-owned intake mapping from Telethon message events into the canonical persisted source-message fields.
+1. Define the reader-owned intake mapping from Telethon message events into the canonical persisted source-message fields, including the convention that `raw_text` stores either the message text or the media caption surface.
 2. Wire configured source subscription into the runtime bootstrap without bypassing the existing Telethon adapter boundary.
 3. Persist incoming messages through the realigned storage contract with initial `classification_status='pending'`, `aggregation_status='new'`, and `publish_status='new'`.
 4. Enqueue only first-seen rows for downstream processing and make duplicate deliveries a no-op beyond safe dedup confirmation.
@@ -34,7 +34,7 @@ Persist newly delivered Telegram source messages exactly once and enqueue only n
 - Telethon reads the configured sources through the canonical runtime path.
 - New source messages are persisted once with the initial `tg_message` state contract.
 - Duplicate source-message deliveries are ignored safely on `(source_chat_id, source_message_id)` and do not re-enqueue work.
-- Persisted intake rows retain the message text or caption surface and the source metadata needed by later M2 publication work.
+- Persisted intake rows retain the message text surface in `raw_text`, using the caption when the Telegram message is media-backed, and keep the source metadata needed by later M2 publication work.
 - The reader stays thin and does not absorb filter, aggregation, or publish decisions.
 
 ## Links

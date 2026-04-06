@@ -127,6 +127,7 @@ runtime:
   processing_queue_size: 1000
   candidate_queue_size: 1000
   publish_queue_size: 200
+  classification_stale_after_seconds: 120
   candidate_similarity_threshold: 0.82
   event_reopen_window_seconds: 300
   candidate_recovery_scan_seconds: 15
