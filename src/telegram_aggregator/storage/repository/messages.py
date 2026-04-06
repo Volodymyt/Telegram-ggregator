@@ -9,8 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from telegram_aggregator.storage.tables import message_records
 
 
+class MessageRepository:
+    def __init__(self, conn: AsyncConnection) -> None:
+        self._conn = conn
+
 async def insert_message_idempotent(
-    conn: AsyncConnection,
+    self,
     *,
     source_chat_id: int,
     source_message_id: int,
@@ -42,23 +46,21 @@ async def insert_message_idempotent(
         )
         .returning(*message_records.c)
     )
-    result = await conn.execute(stmt)
+    result = await self._conn.execute(stmt)
     row = result.mappings().first()
 
     if row is not None:
         return dict(row)
 
-    existing = await get_message_by_source(
-        conn,
+    existing = await self.get_by_source(
         source_chat_id=source_chat_id,
         source_message_id=source_message_id,
     )
     assert existing is not None
     return existing
 
-
 async def get_message_by_source(
-    conn: AsyncConnection,
+    self,
     *,
     source_chat_id: int,
     source_message_id: int,
@@ -69,24 +71,21 @@ async def get_message_by_source(
             message_records.c.source_message_id == source_message_id,
         )
     )
-    result = await conn.execute(stmt)
+    result = await self._conn.execute(stmt)
     row = result.mappings().first()
     return dict(row) if row is not None else None
-
 
 async def get_message_by_id(
-    conn: AsyncConnection,
+    self,
     *,
-    message_id: int,
-) -> dict[str, Any] | None:
+    message_id: int) -> dict[str, Any] | None:
     stmt = sa.select(message_records).where(message_records.c.id == message_id)
-    result = await conn.execute(stmt)
+    result = await self._conn.execute(stmt)
     row = result.mappings().first()
     return dict(row) if row is not None else None
 
-
 async def update_message_status(
-    conn: AsyncConnection,
+    self,
     *,
     message_id: int,
     status: str,
@@ -117,6 +116,6 @@ async def update_message_status(
         .values(**values)
         .returning(*message_records.c)
     )
-    result = await conn.execute(stmt)
+    result = await self._conn.execute(stmt)
     row = result.mappings().first()
     return dict(row) if row is not None else None

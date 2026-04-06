@@ -12,7 +12,12 @@ from telegram_aggregator.storage.repository.messages import (
     update_message_status,
 )
 
+from telegram_aggregator.storage.repository.events import EventRepository
+from telegram_aggregator.storage.repository.messages import MessageRepository
+
 __all__ = [
+    "EventRepository",
+    "MessageRepository",
     "insert_message_idempotent",
     "get_message_by_source",
     "get_message_by_id",

@@ -9,8 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from telegram_aggregator.storage.tables import event_records
 
 
+class EventRepository:
+    def __init__(self, conn: AsyncConnection) -> None:
+        self._conn = conn
+
 async def insert_event(
-    conn: AsyncConnection,
+    self,
     *,
     target_channel: str,
     event_type: str,
@@ -27,25 +31,19 @@ async def insert_event(
         )
         .returning(*event_records.c)
     )
-    result = await conn.execute(stmt)
+    result = await self._conn.execute(stmt)
     row = result.mappings().first()
     assert row is not None
     return dict(row)
 
-
-async def get_event_by_id(
-    conn: AsyncConnection,
-    *,
-    event_id: int,
-) -> dict[str, Any] | None:
+async def get_event_by_id(self, *, event_id: int) -> dict[str, Any] | None:
     stmt = sa.select(event_records).where(event_records.c.id == event_id)
-    result = await conn.execute(stmt)
+    result = await self._conn.execute(stmt)
     row = result.mappings().first()
     return dict(row) if row is not None else None
 
-
 async def update_event(
-    conn: AsyncConnection,
+    self,
     *,
     event_id: int,
     state: str | None = None,
@@ -70,7 +68,7 @@ async def update_event(
         values["publish_status"] = publish_status
 
     if not values:
-        return await get_event_by_id(conn, event_id=event_id)
+        return await self.get_by_id(event_id=event_id)
 
     stmt = (
         sa.update(event_records)
@@ -78,6 +76,6 @@ async def update_event(
         .values(**values)
         .returning(*event_records.c)
     )
-    result = await conn.execute(stmt)
+    result = await self._conn.execute(stmt)
     row = result.mappings().first()
     return dict(row) if row is not None else None
