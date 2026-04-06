@@ -1,8 +1,8 @@
 # M0 Storage contract and readiness
 
 Planning ID: 0015
-Status: Ready
-Last updated: 2026-03-16
+Status: Done
+Last updated: 2026-04-06
 
 ## Goal
 
