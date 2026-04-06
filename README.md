@@ -51,6 +51,8 @@ Apply database migrations before the first run or after pulling new revisions.
 docker compose run --rm app alembic upgrade head
 ```
 
+Storage readiness resolves Alembic scripts from the current working directory, so run the service and migration commands from the repository root.
+
 Inside the container, the canonical module paths remain `python -m telegram_aggregator` for the service and `python -m telegram_aggregator.login` for login.
 
 ## Codex Role Wrapper

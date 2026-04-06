@@ -1,0 +1,121 @@
+from __future__ import annotations
+
+from typing import Any
+
+import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.ext.asyncio import AsyncConnection
+
+from telegram_aggregator.storage.tables import message_records
+
+
+class MessageRepository:
+    def __init__(self, conn: AsyncConnection) -> None:
+        self._conn = conn
+
+    async def insert_message_idempotent(
+        self,
+        *,
+        source_chat_id: int,
+        source_message_id: int,
+        source_title: str | None = None,
+        source_link: str | None = None,
+        raw_text: str | None = None,
+        normalized_text: str | None = None,
+        has_media: bool = False,
+        event_type: str | None = None,
+        event_signal: str | None = None,
+        candidate_signature: str | None = None,
+    ) -> dict[str, Any]:
+        stmt = (
+            pg_insert(message_records)
+            .values(
+                source_chat_id=source_chat_id,
+                source_message_id=source_message_id,
+                source_title=source_title,
+                source_link=source_link,
+                raw_text=raw_text,
+                normalized_text=normalized_text,
+                has_media=has_media,
+                event_type=event_type,
+                event_signal=event_signal,
+                candidate_signature=candidate_signature,
+            )
+            .on_conflict_do_nothing(
+                index_elements=["source_chat_id", "source_message_id"],
+            )
+            .returning(*message_records.c)
+        )
+        result = await self._conn.execute(stmt)
+        row = result.mappings().first()
+
+        if row is not None:
+            return dict(row)
+
+        existing = await self.get_message_by_source(
+            source_chat_id=source_chat_id,
+            source_message_id=source_message_id,
+        )
+        assert existing is not None
+        return existing
+
+    async def get_message_by_source(
+        self,
+        *,
+        source_chat_id: int,
+        source_message_id: int,
+    ) -> dict[str, Any] | None:
+        stmt = sa.select(message_records).where(
+            sa.and_(
+                message_records.c.source_chat_id == source_chat_id,
+                message_records.c.source_message_id == source_message_id,
+            )
+        )
+        result = await self._conn.execute(stmt)
+        row = result.mappings().first()
+        return dict(row) if row is not None else None
+
+    async def get_message_by_id(
+        self,
+        *,
+        message_id: int,
+    ) -> dict[str, Any] | None:
+        stmt = sa.select(message_records).where(message_records.c.id == message_id)
+        result = await self._conn.execute(stmt)
+        row = result.mappings().first()
+        return dict(row) if row is not None else None
+
+    async def update_message_status(
+        self,
+        *,
+        message_id: int,
+        status: str,
+        filter_reason: str | None = None,
+        event_record_id: int | None = None,
+        normalized_text: str | None = None,
+        event_type: str | None = None,
+        event_signal: str | None = None,
+        candidate_signature: str | None = None,
+    ) -> dict[str, Any] | None:
+        candidate_values: dict[str, Any] = {
+            "status": status,
+            "filter_reason": filter_reason,
+            "event_record_id": event_record_id,
+            "normalized_text": normalized_text,
+            "event_type": event_type,
+            "event_signal": event_signal,
+            "candidate_signature": candidate_signature,
+        }
+        values = {
+            key: value for key, value in candidate_values.items() if value is not None
+        }
+
+        stmt = (
+            sa.update(message_records)
+            .where(message_records.c.id == message_id)
+            .values(**values)
+            .returning(*message_records.c)
+        )
+        result = await self._conn.execute(stmt)
+        row = result.mappings().first()
+        return dict(row) if row is not None else None
