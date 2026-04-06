@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""List active canonical story documents that are not Done and have no brief."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable
+
+
+PLANNING_ID_RE = re.compile(r"^Planning ID:\s*(\d{4})\s*$", re.MULTILINE)
+STATUS_RE = re.compile(r"^Status:\s*(.+?)\s*$", re.MULTILINE)
+TITLE_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
+CANONICAL_FILE_RE = re.compile(r"^\d{4}_[a-z0-9_]+\.md$")
+STORY_DIR_RE = re.compile(r"^\d{2}_\d{4}_[a-z0-9_]+$")
+EPIC_DIR_RE = re.compile(r"^\d{2}_\d{4}_[a-z0-9_]+$")
+BRIEF_FILENAME = "brief.uk.md"
+
+
+class StoryBriefLookupError(Exception):
+    """Raised when story brief lookup fails."""
+
+
+@dataclass(frozen=True)
+class StoryBriefGap:
+    planning_id: str
+    title: str
+    status: str
+    story_path: Path
+    brief_path: Path
+
+    def to_dict(self, repo_root: Path) -> dict[str, str]:
+        return {
+            "planning_id": self.planning_id,
+            "title": self.title,
+            "status": self.status,
+            "story_path": str(self.story_path.relative_to(repo_root)),
+            "missing_brief_path": str(self.brief_path.relative_to(repo_root)),
+        }
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="List active canonical stories that are not Done and have no brief.uk.md.",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Emit machine-readable JSON",
+    )
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=Path(__file__).resolve().parents[1],
+        help=argparse.SUPPRESS,
+    )
+    return parser.parse_args()
+
+
+def iter_markdown_files(root: Path) -> Iterable[Path]:
+    if not root.exists():
+        return []
+    return sorted(path for path in root.rglob("*.md") if path.is_file())
+
+
+def load_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise StoryBriefLookupError(f"Failed to read {path}: {exc}") from exc
+
+
+def extract_required(pattern: re.Pattern[str], text: str, label: str, path: Path) -> str:
+    match = pattern.search(text)
+    if match is None:
+        raise StoryBriefLookupError(f"Missing {label} in {path}")
+    return match.group(1).strip()
+
+
+def is_canonical_story(path: Path, repo_root: Path) -> bool:
+    planning_root = repo_root / "docs" / "planning"
+    try:
+        relative = path.relative_to(planning_root)
+    except ValueError:
+        return False
+
+    parts = relative.parts
+    if len(parts) != 4:
+        return False
+
+    location, epic_dir, story_dir, filename = parts
+    if location != "active":
+        return False
+    if not EPIC_DIR_RE.fullmatch(epic_dir):
+        return False
+    if not STORY_DIR_RE.fullmatch(story_dir):
+        return False
+    if not CANONICAL_FILE_RE.fullmatch(filename):
+        return False
+
+    story_id = story_dir.split("_", 2)[1]
+    return filename == f"{story_id}_{story_dir.split('_', 2)[2]}.md"
+
+
+def load_story_gap(path: Path) -> StoryBriefGap | None:
+    text = load_text(path)
+    planning_id = extract_required(PLANNING_ID_RE, text, "Planning ID", path)
+    title = extract_required(TITLE_RE, text, "title", path)
+    status = extract_required(STATUS_RE, text, "status", path)
+
+    if status.casefold() == "done":
+        return None
+
+    brief_path = path.parent / BRIEF_FILENAME
+    if brief_path.exists():
+        return None
+
+    return StoryBriefGap(
+        planning_id=planning_id,
+        title=title,
+        status=status,
+        story_path=path,
+        brief_path=brief_path,
+    )
+
+
+def find_story_brief_gaps(repo_root: Path) -> list[StoryBriefGap]:
+    planning_root = repo_root / "docs" / "planning"
+    location_root = planning_root / "active"
+    gaps: list[StoryBriefGap] = []
+
+    for path in iter_markdown_files(location_root):
+        if not is_canonical_story(path, repo_root):
+            continue
+        gap = load_story_gap(path)
+        if gap is not None:
+            gaps.append(gap)
+
+    return gaps
+
+
+def format_human_output(gaps: list[StoryBriefGap], repo_root: Path) -> str:
+    if not gaps:
+        return "No matching stories found."
+
+    lines: list[str] = []
+    for gap in gaps:
+        lines.append(
+            " | ".join(
+                [
+                    f"Planning ID: {gap.planning_id}",
+                    f"Status: {gap.status}",
+                    f"Title: {gap.title}",
+                    f"Story: {gap.story_path.relative_to(repo_root)}",
+                    f"Missing brief: {gap.brief_path.relative_to(repo_root)}",
+                ]
+            )
+        )
+    return "\n".join(lines)
+
+
+def main() -> int:
+    args = parse_args()
+    repo_root = args.repo_root.resolve()
+
+    try:
+        gaps = find_story_brief_gaps(repo_root)
+    except StoryBriefLookupError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    if args.json_output:
+        payload = [gap.to_dict(repo_root) for gap in gaps]
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print(format_human_output(gaps, repo_root))
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
