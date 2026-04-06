@@ -2,3 +2,7 @@ docs_ua/
 docs_ua/**
 ./docs_ua
 ./docs_ua/**
+brief.uk.md
+**/brief.uk.md
+./brief.uk.md
+./**/brief.uk.md

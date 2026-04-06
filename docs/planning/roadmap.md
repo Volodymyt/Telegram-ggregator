@@ -24,6 +24,7 @@ Use milestone-oriented sections such as:
 
 - Make MVP delivery decomposition-ready by locking milestone sequencing, technical defaults, recovery semantics, and requirement coverage for the current implementation baseline. Detailed plan: [2026-03-14-mvp-delivery-plan.md](active/2026-03-14-mvp-delivery-plan.md).
 - Execute the `M0 Foundations Ready` milestone to replace the legacy runtime baseline with the canonical package, config/login contract, storage foundation, storage readiness, and operability foundations. Active epic: [M0 Foundations Ready](active/01_0001_foundations_ready/0001_foundations_ready.md).
+- Define the `M1 Intake To Candidate` slice as the first durable post-foundations runtime milestone, including storage-contract realignment, Telegram intake, normalization, filter evaluation, and candidate persistence without publication. Active epic: [M1 Intake To Candidate](active/02_0024_intake_to_candidate/0024_intake_to_candidate.md).
 - Deliver the first executable MVP path through foundations, intake, candidate creation, event deduplication, and text publication with attribution. Detailed plan: [2026-03-14-mvp-delivery-plan.md](active/2026-03-14-mvp-delivery-plan.md).
 
 ## Next

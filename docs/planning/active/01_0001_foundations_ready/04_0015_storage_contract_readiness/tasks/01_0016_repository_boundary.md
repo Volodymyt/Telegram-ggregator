@@ -1,8 +1,8 @@
 # M0 Storage contract and readiness: repository boundary and persistence primitives
 
 Planning ID: 0016
-Status: Ready
-Last updated: 2026-03-15
+Status: Done
+Last updated: 2026-04-06
 
 ## Goal
 

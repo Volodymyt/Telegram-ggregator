@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generate Story Briefs"
+  short_description: "Create missing story briefs in parallel"
+  default_prompt: "Use $generate-story-briefs to find active stories without `brief.uk.md` and generate the missing briefs in parallel with cheap worker agents."

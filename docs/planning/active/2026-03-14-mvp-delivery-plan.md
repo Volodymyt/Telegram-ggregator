@@ -39,7 +39,7 @@ The following constraints are already fixed by the architecture and requirements
 - A repeated matching `start` signal more than 5 minutes after the original event start opens a new event.
 - A `clear` signal closes only an active event of the same `event_type` and is never published.
 - `DRY_RUN` remains a supported operator mode and must not perform Telegram network I/O at all.
-- Restart recovery must cover durable work that can be left behind with `classification_status='candidate' and aggregation_status='queued'`, or `publish_status in ('queued', 'publishing')`.
+- Restart recovery must cover durable work that can be left behind with `classification_status='pending'`, `classification_status='candidate' and aggregation_status='queued'`, or `publish_status in ('queued', 'publishing')`.
 
 ## Investigation Findings
 
@@ -102,7 +102,8 @@ These defaults are chosen now to remove ambiguity before backlog decomposition.
   - trimming;
   - collapsing repeated whitespace;
   - replacing `ё` with `е`.
-- Build `candidate_signature` from normalized text after stripping URLs, usernames, punctuation, and repeated whitespace.
+- Persist `normalized_text` during M1 processing from the shared normalization pipeline before filter classification.
+- Build `candidate_signature` during candidate aggregation from persisted `normalized_text` after stripping URLs, usernames, punctuation, and repeated whitespace.
 - Match against message text and media captions only.
 
 ### Publishing
@@ -151,6 +152,7 @@ Future implementation and task decomposition should preserve these internal type
 - `EventSignal`
 - `Event`
 - `PublicationJob`
+- Persist `tg_message.normalized_text` during M1 processing and reserve `candidate_signature` generation for M2 candidate aggregation.
 - `tg_message.classification_status`:
   - `pending`
   - `outdated`
@@ -212,13 +214,14 @@ These items must remain visible during task decomposition even when they do not 
 - Source subscription and message reading through the `telegram/` adapter and `reading/` flow.
 - Internal message normalization.
 - Include/exclude filter engine.
+- Startup recovery scan for persisted intake rows still in `classification_status='pending'`.
 - Processing queue and candidate classification.
 
 ### 4. Candidate Aggregation and Event Lifecycle
 
 - Candidate queue consumer.
 - Recovery scan for persisted candidate rows with `classification_status='candidate'` and `aggregation_status='queued'`.
-- Candidate signature generation.
+- Candidate signature generation from persisted `tg_message.normalized_text`.
 - Fuzzy matching against open events.
 - Duplicate suppression and event linking.
 - `clear` handling and event closure.
@@ -270,8 +273,8 @@ Exit criteria:
 - Filter behavior covers `any` and `all` modes.
 - Filter behavior covers `case_insensitive` and normalization toggles from the YAML contract.
 - Messages already stale before classification are marked `outdated` without filter or candidate processing.
-- Candidate classification persists `event_type`, `event_signal`, and `candidate_signature`.
-- Queue-driven intake and processing operate end-to-end without publication.
+- Candidate classification persists `normalized_text`, `event_type`, and `event_signal`.
+- Queue-driven intake and processing operate end-to-end without publication, including recovery of persisted `pending` intake rows after restart.
 
 ### M2 Start Event Publish Slice
 

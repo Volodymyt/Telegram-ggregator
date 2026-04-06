@@ -1,8 +1,8 @@
 # M0 Storage contract and readiness: verification coverage
 
 Planning ID: 0018
-Status: Ready
-Last updated: 2026-03-15
+Status: Done
+Last updated: 2026-04-06
 
 ## Goal
 
