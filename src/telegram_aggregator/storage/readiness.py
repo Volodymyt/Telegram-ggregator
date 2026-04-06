@@ -22,7 +22,17 @@ class ReadinessResult:
 
 
 def _get_alembic_script_location() -> str:
-    return str(Path(__file__).resolve().parents[3] / "alembic")
+    script_location = Path.cwd() / "alembic"
+
+    if not script_location.is_dir():
+        raise StorageMigrationError(
+            "Cannot locate Alembic migration scripts in the current working "
+            f"directory: expected {script_location}. "
+            "Start the service from the repository root or a directory that "
+            "contains the alembic/ folder."
+        )
+
+    return str(script_location)
 
 
 async def check_db_reachable(engine: AsyncEngine) -> None:

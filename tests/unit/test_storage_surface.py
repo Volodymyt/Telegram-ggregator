@@ -498,10 +498,35 @@ def test_alembic_env_target_metadata_is_canonical_metadata() -> None:
 def test_readiness_resolves_existing_alembic_directory() -> None:
     import telegram_aggregator.storage.readiness as readiness
 
-    script_location = Path(readiness._get_alembic_script_location())
+    project_root = Path(__file__).resolve().parents[2]
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.chdir(project_root)
+
+    try:
+        script_location = Path(readiness._get_alembic_script_location())
+    finally:
+        monkeypatch.undo()
 
     assert script_location.exists(), "readiness must point to an existing alembic directory"
     assert script_location.name == "alembic"
+    assert script_location.parent == project_root
+
+
+def test_readiness_rejects_cwd_without_alembic_directory(tmp_path: Path) -> None:
+    from telegram_aggregator.storage import StorageMigrationError
+    import telegram_aggregator.storage.readiness as readiness
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.chdir(tmp_path)
+
+    try:
+        with pytest.raises(
+            StorageMigrationError,
+            match="Cannot locate Alembic migration scripts in the current working directory",
+        ):
+            readiness._get_alembic_script_location()
+    finally:
+        monkeypatch.undo()
 
 
 @pytest.mark.asyncio
