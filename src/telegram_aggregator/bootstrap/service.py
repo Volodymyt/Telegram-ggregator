@@ -66,7 +66,6 @@ class ServiceRuntime:
         self._message_queue = MessageQueue()
         self._readiness = RuntimeReadiness()
         self._health_runner: web.AppRunner | None = None
-        self._health_site: web.TCPSite | None = None
 
     async def run(self) -> None:
         try:
@@ -120,7 +119,6 @@ class ServiceRuntime:
         await site.start()
 
         self._health_runner = runner
-        self._health_site = site
         logger.info(
             "Health endpoint listening on http://%s:%d/health",
             _HEALTH_HOST,
@@ -131,7 +129,6 @@ class ServiceRuntime:
         if self._health_runner is not None:
             await self._health_runner.cleanup()
             self._health_runner = None
-            self._health_site = None
 
     async def _handle_health(self, _request: web.Request) -> web.Response:
         ready = self._readiness.is_ready()
