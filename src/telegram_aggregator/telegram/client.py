@@ -6,7 +6,6 @@ import asyncio
 import getpass
 import inspect
 import logging
-import signal
 import sqlite3
 from dataclasses import dataclass
 from datetime import timezone
@@ -435,21 +434,8 @@ class TelegramClient:
         self._handlers.clear()
         logger.info("unsubscribe_all: all handlers removed")
 
-    async def _wait_for_shutdown_signal(self) -> None:
-        """Wait until SIGTERM or SIGINT is received."""
-        loop = asyncio.get_event_loop()
-        done = asyncio.Event()
-        for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(sig, done.set)
-        try:
-            await done.wait()
-        finally:
-            for sig in (signal.SIGTERM, signal.SIGINT):
-                loop.remove_signal_handler(sig)
-
     async def run_until_disconnected(self) -> None:
-        if self._skip_in_dry_run("DRY_RUN is enabled; waiting without Telegram transport."):
-            await self._wait_for_shutdown_signal()
+        if self._skip_in_dry_run("DRY_RUN is enabled; Telegram transport not started."):
             return
 
         await self._await_telethon_result(
