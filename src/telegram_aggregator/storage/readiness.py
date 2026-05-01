@@ -74,7 +74,25 @@ async def check_migrations_current(engine: AsyncEngine) -> None:
         )
 
 
+async def check_schema_queryable(engine: AsyncEngine) -> None:
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(
+                sa.text(
+                    "SELECT classification_status, aggregation_status, publish_status FROM tg_message LIMIT 0"
+                )
+            )
+            await conn.execute(
+                sa.text("SELECT publish_status FROM event LIMIT 0")
+            )
+    except Exception as exc:
+        raise StorageMigrationError(
+            f"Schema check failed: {exc}"
+        ) from exc
+
+
 async def check_storage_readiness(engine: AsyncEngine) -> ReadinessResult:
     await check_db_reachable(engine)
     await check_migrations_current(engine)
+    await check_schema_queryable(engine)
     return ReadinessResult(db_reachable=True, migrations_current=True)

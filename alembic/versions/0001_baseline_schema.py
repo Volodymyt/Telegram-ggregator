@@ -13,7 +13,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.create_table(
-        "event_records",
+        "event",
         sa.Column("id", sa.BigInteger, primary_key=True, autoincrement=True),
         sa.Column("target_channel", sa.Text, nullable=False),
         sa.Column("event_type", sa.Text, nullable=False),
@@ -31,7 +31,7 @@ def upgrade() -> None:
             server_default=sa.func.now(),
         ),
         sa.Column("ended_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("canonical_message_record_id", sa.BigInteger, nullable=True),
+        sa.Column("canonical_message_id", sa.BigInteger, nullable=True),
         sa.Column("published_target_message_id", sa.BigInteger, nullable=True),
         sa.Column("publish_status", sa.Text, nullable=False, server_default="pending"),
         sa.Column(
@@ -49,7 +49,7 @@ def upgrade() -> None:
     )
 
     op.create_table(
-        "message_records",
+        "tg_message",
         sa.Column("id", sa.BigInteger, primary_key=True, autoincrement=True),
         sa.Column("source_chat_id", sa.BigInteger, nullable=False),
         sa.Column("source_message_id", sa.BigInteger, nullable=False),
@@ -63,10 +63,10 @@ def upgrade() -> None:
         sa.Column("event_type", sa.Text, nullable=True),
         sa.Column("event_signal", sa.Text, nullable=True),
         sa.Column("candidate_signature", sa.Text, nullable=True),
-        sa.Column("event_record_id", sa.BigInteger, nullable=True),
-        sa.Column(
-            "status", sa.Text, nullable=False, server_default="received"
-        ),
+        sa.Column("event_id", sa.BigInteger, nullable=True),
+        sa.Column("classification_status", sa.Text, nullable=False, server_default="pending"),
+        sa.Column("aggregation_status", sa.Text, nullable=False, server_default="new"),
+        sa.Column("publish_status", sa.Text, nullable=False, server_default="new"),
         sa.Column("filter_reason", sa.Text, nullable=True),
         sa.Column("target_message_id", sa.BigInteger, nullable=True),
         sa.Column(
@@ -89,37 +89,37 @@ def upgrade() -> None:
             server_default=sa.func.now(),
         ),
         sa.ForeignKeyConstraint(
-            ["event_record_id"],
-            ["event_records.id"],
-            name="fk_message_records_event_record_id_event_records",
+            ["event_id"],
+            ["event.id"],
+            name="fk_tg_message_event_id_event",
         ),
         sa.UniqueConstraint(
             "source_chat_id",
             "source_message_id",
-            name="uq_message_records_source_chat_id_source_message_id",
+            name="uq_tg_message_source_chat_id_source_message_id",
         ),
     )
 
     op.create_index(
-        "ix_message_records_status",
-        "message_records",
-        ["status"],
+        "ix_tg_message_classification_status",
+        "tg_message",
+        ["classification_status"],
     )
     op.create_index(
-        "ix_message_records_event_type_status_received_at",
-        "message_records",
-        ["event_type", "status", "received_at"],
+        "ix_tg_message_event_type_classification_status_received_at",
+        "tg_message",
+        ["event_type", "classification_status", "received_at"],
     )
 
 
 def downgrade() -> None:
     op.drop_index(
-        "ix_message_records_event_type_status_received_at",
-        table_name="message_records",
+        "ix_tg_message_event_type_classification_status_received_at",
+        table_name="tg_message",
     )
     op.drop_index(
-        "ix_message_records_status",
-        table_name="message_records",
+        "ix_tg_message_classification_status",
+        table_name="tg_message",
     )
-    op.drop_table("message_records")
-    op.drop_table("event_records")
+    op.drop_table("tg_message")
+    op.drop_table("event")
