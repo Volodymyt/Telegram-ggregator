@@ -1,8 +1,8 @@
 # M0 Bootstrap, observability, and test harness: runtime lifecycle and queue boundaries
 
 Planning ID: 0020
-Status: Ready
-Last updated: 2026-03-15
+Status: Done
+Last updated: 2026-05-02
 
 ## Goal
 
