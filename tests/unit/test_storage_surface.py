@@ -11,6 +11,7 @@ These tests validate the storage package contract without a running database:
 
 from __future__ import annotations
 
+import inspect
 import importlib
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,6 +58,14 @@ def test_storage_public_api() -> None:
     assert hasattr(storage, "StorageError"), "StorageError missing from public API"
     assert hasattr(storage, "StorageConfigError"), "StorageConfigError missing from public API"
     assert hasattr(storage, "StorageMigrationError"), "StorageMigrationError missing from public API"
+    assert hasattr(storage, "tg_message"), "tg_message missing from public API"
+    assert hasattr(storage, "event"), "event missing from public API"
+    assert hasattr(storage, "check_storage_readiness"), "check_storage_readiness missing from public API"
+    assert hasattr(storage, "check_db_reachable"), "check_db_reachable missing from public API"
+    assert hasattr(storage, "check_migrations_current"), "check_migrations_current missing from public API"
+    assert not hasattr(storage, "message_records"), "legacy message_records must not be exported"
+    assert not hasattr(storage, "event_records"), "legacy event_records must not be exported"
+    assert not hasattr(storage, "check_schema_queryable"), "schema smoke check must not be exported"
 
 
 # ---------------------------------------------------------------------------
@@ -202,6 +211,28 @@ def test_event_repository_exposes_crud_methods() -> None:
         assert hasattr(EventRepository, method_name), (
             f"EventRepository missing method: {method_name}"
         )
+
+
+def test_repository_update_signatures_use_canonical_storage_names() -> None:
+    from telegram_aggregator.storage import EventRepository, MessageRepository
+
+    message_params = inspect.signature(
+        MessageRepository.update_message_status
+    ).parameters
+    event_params = inspect.signature(EventRepository.update_event).parameters
+
+    for name in (
+        "classification_status",
+        "aggregation_status",
+        "publish_status",
+        "event_id",
+    ):
+        assert name in message_params
+
+    assert "status" not in message_params
+    assert "event_record_id" not in message_params
+    assert "canonical_message_id" in event_params
+    assert "canonical_message_record_id" not in event_params
 
 
 # ---------------------------------------------------------------------------
@@ -397,14 +428,44 @@ async def test_event_repository_update_event_filters_out_none_values() -> None:
 
 
 @pytest.mark.asyncio
+async def test_event_repository_update_event_uses_canonical_message_id() -> None:
+    from telegram_aggregator.storage import EventRepository
+
+    conn = _RecordingConnection(
+        row={
+            "id": 7,
+            "canonical_message_id": 11,
+        }
+    )
+    repo = EventRepository(conn=conn)  # type: ignore[arg-type]
+
+    result = await repo.update_event(event_id=7, canonical_message_id=11)
+
+    assert result == {
+        "id": 7,
+        "canonical_message_id": 11,
+    }
+    assert len(conn.executed) == 1
+
+    stmt = conn.executed[0]
+    params = stmt.compile().params
+
+    assert params["id_1"] == 7
+    assert params["canonical_message_id"] == 11
+    assert "canonical_message_record_id" not in params
+    assert set(params) == {"id_1", "canonical_message_id"}
+
+
+@pytest.mark.asyncio
 async def test_message_repository_update_message_status_filters_out_none_values() -> None:
     from telegram_aggregator.storage import MessageRepository
 
     conn = _RecordingConnection(
         row={
             "id": 11,
-            "status": "candidate",
-            "event_record_id": 7,
+            "classification_status": "candidate",
+            "aggregation_status": "queued",
+            "event_id": 7,
             "event_type": "ballistic",
         }
     )
@@ -412,9 +473,11 @@ async def test_message_repository_update_message_status_filters_out_none_values(
 
     result = await repo.update_message_status(
         message_id=11,
-        status="candidate",
+        classification_status="candidate",
+        aggregation_status="queued",
+        publish_status=None,
         filter_reason=None,
-        event_record_id=7,
+        event_id=7,
         normalized_text=None,
         event_type="ballistic",
         event_signal=None,
@@ -423,8 +486,9 @@ async def test_message_repository_update_message_status_filters_out_none_values(
 
     assert result == {
         "id": 11,
-        "status": "candidate",
-        "event_record_id": 7,
+        "classification_status": "candidate",
+        "aggregation_status": "queued",
+        "event_id": 7,
         "event_type": "ballistic",
     }
     assert len(conn.executed) == 1
@@ -433,14 +497,53 @@ async def test_message_repository_update_message_status_filters_out_none_values(
     params = stmt.compile().params
 
     assert params["id_1"] == 11
-    assert params["status"] == "candidate"
-    assert params["event_record_id"] == 7
+    assert params["classification_status"] == "candidate"
+    assert params["aggregation_status"] == "queued"
+    assert params["event_id"] == 7
     assert params["event_type"] == "ballistic"
+    assert "publish_status" not in params
     assert "filter_reason" not in params
     assert "normalized_text" not in params
     assert "event_signal" not in params
     assert "candidate_signature" not in params
-    assert set(params) == {"id_1", "status", "event_record_id", "event_type"}
+    assert set(params) == {
+        "id_1",
+        "classification_status",
+        "aggregation_status",
+        "event_id",
+        "event_type",
+    }
+
+
+@pytest.mark.asyncio
+async def test_message_repository_update_message_status_sets_publish_status() -> None:
+    from telegram_aggregator.storage import MessageRepository
+
+    conn = _RecordingConnection(
+        row={
+            "id": 11,
+            "publish_status": "queued",
+        }
+    )
+    repo = MessageRepository(conn=conn)  # type: ignore[arg-type]
+
+    result = await repo.update_message_status(
+        message_id=11,
+        publish_status="queued",
+    )
+
+    assert result == {
+        "id": 11,
+        "publish_status": "queued",
+    }
+    assert len(conn.executed) == 1
+
+    stmt = conn.executed[0]
+    params = stmt.compile().params
+
+    assert params["id_1"] == 11
+    assert params["publish_status"] == "queued"
+    assert set(params) == {"id_1", "publish_status"}
 
 
 # ---------------------------------------------------------------------------
@@ -527,6 +630,12 @@ def test_readiness_rejects_cwd_without_alembic_directory(tmp_path: Path) -> None
             readiness._get_alembic_script_location()
     finally:
         monkeypatch.undo()
+
+
+def test_readiness_module_does_not_expose_schema_queryable_check() -> None:
+    import telegram_aggregator.storage.readiness as readiness
+
+    assert not hasattr(readiness, "check_schema_queryable")
 
 
 @pytest.mark.asyncio

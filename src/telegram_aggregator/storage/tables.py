@@ -4,25 +4,36 @@ import sqlalchemy as sa
 
 from telegram_aggregator.storage.metadata import metadata
 
-MESSAGE_STATUSES = (
-    "received",
+CLASSIFICATION_STATUSES = (
+    "pending",
+    "outdated",
     "filtered_out",
     "candidate",
+)
+
+AGGREGATION_STATUSES = (
+    "new",
+    "queued",
     "suppressed_duplicate",
-    "selected_for_publish",
-    "publishing",
-    "published",
-    "publish_failed",
+    "selected",
     "clear_processed",
     "orphan_clear",
+)
+
+MESSAGE_PUBLISH_STATUSES = (
+    "new",
+    "queued",
+    "publishing",
+    "published",
+    "failed",
 )
 
 EVENT_STATES = ("open", "closed")
 
 EVENT_PUBLISH_STATUSES = ("pending", "published", "failed")
 
-event_records = sa.Table(
-    "event_records",
+event = sa.Table(
+    "event",
     metadata,
     sa.Column("id", sa.BigInteger, primary_key=True, autoincrement=True),
     sa.Column("target_channel", sa.Text, nullable=False),
@@ -37,9 +48,9 @@ event_records = sa.Table(
     sa.Column("last_seen_at", sa.DateTime(timezone=True), nullable=False,
               server_default=sa.func.now()),
     sa.Column("ended_at", sa.DateTime(timezone=True), nullable=True),
-    sa.Column("canonical_message_record_id", sa.BigInteger, nullable=True),
+    sa.Column("canonical_message_id", sa.BigInteger, nullable=True),
     sa.Column("published_target_message_id", sa.BigInteger, nullable=True),
-    sa.Column("publish_status", sa.Text, nullable=False, server_default="pending"),
+    sa.Column("publish_status", sa.String(32), nullable=False, server_default="pending"),
     sa.Column(
         "created_at",
         sa.DateTime(timezone=True),
@@ -55,8 +66,8 @@ event_records = sa.Table(
     ),
 )
 
-message_records = sa.Table(
-    "message_records",
+tg_message = sa.Table(
+    "tg_message",
     metadata,
     sa.Column("id", sa.BigInteger, primary_key=True, autoincrement=True),
     sa.Column("source_chat_id", sa.BigInteger, nullable=False),
@@ -70,12 +81,24 @@ message_records = sa.Table(
     sa.Column("event_signal", sa.Text, nullable=True),
     sa.Column("candidate_signature", sa.Text, nullable=True),
     sa.Column(
-        "event_record_id",
+        "event_id",
         sa.BigInteger,
-        sa.ForeignKey("event_records.id", name="fk_message_records_event_record_id_event_records"),
+        sa.ForeignKey("event.id", name="fk_tg_message_event_id_event"),
         nullable=True,
     ),
-    sa.Column("status", sa.Text, nullable=False, server_default="received"),
+    sa.Column(
+        "classification_status",
+        sa.String(32),
+        nullable=False,
+        server_default="pending",
+    ),
+    sa.Column(
+        "aggregation_status",
+        sa.String(32),
+        nullable=False,
+        server_default="new",
+    ),
+    sa.Column("publish_status", sa.String(32), nullable=False, server_default="new"),
     sa.Column("filter_reason", sa.Text, nullable=True),
     sa.Column("target_message_id", sa.BigInteger, nullable=True),
     sa.Column("publish_attempts", sa.Integer, nullable=False, server_default="0"),
@@ -96,13 +119,13 @@ message_records = sa.Table(
     sa.UniqueConstraint(
         "source_chat_id",
         "source_message_id",
-        name="uq_message_records_source_chat_id_source_message_id",
+        name="uq_tg_message_source_chat_id_source_message_id",
     ),
-    sa.Index("ix_message_records_status", "status"),
+    sa.Index("ix_tg_message_classification_status", "classification_status"),
     sa.Index(
-        "ix_message_records_event_type_status_received_at",
+        "ix_tg_message_event_type_classification_status_received_at",
         "event_type",
-        "status",
+        "classification_status",
         "received_at",
     ),
 )

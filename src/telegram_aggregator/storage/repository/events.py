@@ -6,7 +6,7 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from telegram_aggregator.storage.tables import event_records
+from telegram_aggregator.storage.tables import event
 
 
 class EventRepository:
@@ -19,17 +19,17 @@ class EventRepository:
         target_channel: str,
         event_type: str,
         state: str = "open",
-        canonical_message_record_id: int | None = None,
+        canonical_message_id: int | None = None,
     ) -> dict[str, Any]:
         stmt = (
-            sa.insert(event_records)
+            sa.insert(event)
             .values(
                 target_channel=target_channel,
                 event_type=event_type,
                 state=state,
-                canonical_message_record_id=canonical_message_record_id,
+                canonical_message_id=canonical_message_id,
             )
-            .returning(*event_records.c)
+            .returning(*event.c)
         )
         result = await self._conn.execute(stmt)
         row = result.mappings().first()
@@ -37,7 +37,7 @@ class EventRepository:
         return dict(row)
 
     async def get_event_by_id(self, *, event_id: int) -> dict[str, Any] | None:
-        stmt = sa.select(event_records).where(event_records.c.id == event_id)
+        stmt = sa.select(event).where(event.c.id == event_id)
         result = await self._conn.execute(stmt)
         row = result.mappings().first()
         return dict(row) if row is not None else None
@@ -49,7 +49,7 @@ class EventRepository:
         state: str | None = None,
         last_seen_at: datetime | None = None,
         ended_at: datetime | None = None,
-        canonical_message_record_id: int | None = None,
+        canonical_message_id: int | None = None,
         published_target_message_id: int | None = None,
         publish_status: str | None = None,
     ) -> dict[str, Any] | None:
@@ -57,7 +57,7 @@ class EventRepository:
             "state": state,
             "last_seen_at": last_seen_at,
             "ended_at": ended_at,
-            "canonical_message_record_id": canonical_message_record_id,
+            "canonical_message_id": canonical_message_id,
             "published_target_message_id": published_target_message_id,
             "publish_status": publish_status,
         }
@@ -69,10 +69,10 @@ class EventRepository:
             return await self.get_event_by_id(event_id=event_id)
 
         stmt = (
-            sa.update(event_records)
-            .where(event_records.c.id == event_id)
+            sa.update(event)
+            .where(event.c.id == event_id)
             .values(**values)
-            .returning(*event_records.c)
+            .returning(*event.c)
         )
         result = await self._conn.execute(stmt)
         row = result.mappings().first()

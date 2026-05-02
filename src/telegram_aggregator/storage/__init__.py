@@ -17,7 +17,7 @@ from telegram_aggregator.storage.readiness import (
 )
 
 from telegram_aggregator.storage.metadata import metadata
-from telegram_aggregator.storage.tables import event_records, message_records
+from telegram_aggregator.storage.tables import event, tg_message
 
 __all__ = [
     "build_engine",
@@ -30,8 +30,8 @@ __all__ = [
     "build_storage",
     "MessageRepository",
     "EventRepository",
-    "message_records",
-    "event_records",
+    "tg_message",
+    "event",
     "check_storage_readiness",
     "check_db_reachable",
     "check_migrations_current",

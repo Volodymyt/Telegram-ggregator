@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from telegram_aggregator.storage.tables import message_records
+from telegram_aggregator.storage.tables import tg_message
 
 
 class MessageRepository:
@@ -28,7 +28,7 @@ class MessageRepository:
         candidate_signature: str | None = None,
     ) -> dict[str, Any]:
         stmt = (
-            pg_insert(message_records)
+            pg_insert(tg_message)
             .values(
                 source_chat_id=source_chat_id,
                 source_message_id=source_message_id,
@@ -44,7 +44,7 @@ class MessageRepository:
             .on_conflict_do_nothing(
                 index_elements=["source_chat_id", "source_message_id"],
             )
-            .returning(*message_records.c)
+            .returning(*tg_message.c)
         )
         result = await self._conn.execute(stmt)
         row = result.mappings().first()
@@ -65,10 +65,10 @@ class MessageRepository:
         source_chat_id: int,
         source_message_id: int,
     ) -> dict[str, Any] | None:
-        stmt = sa.select(message_records).where(
+        stmt = sa.select(tg_message).where(
             sa.and_(
-                message_records.c.source_chat_id == source_chat_id,
-                message_records.c.source_message_id == source_message_id,
+                tg_message.c.source_chat_id == source_chat_id,
+                tg_message.c.source_message_id == source_message_id,
             )
         )
         result = await self._conn.execute(stmt)
@@ -80,7 +80,7 @@ class MessageRepository:
         *,
         message_id: int,
     ) -> dict[str, Any] | None:
-        stmt = sa.select(message_records).where(message_records.c.id == message_id)
+        stmt = sa.select(tg_message).where(tg_message.c.id == message_id)
         result = await self._conn.execute(stmt)
         row = result.mappings().first()
         return dict(row) if row is not None else None
@@ -89,32 +89,39 @@ class MessageRepository:
         self,
         *,
         message_id: int,
-        status: str,
         filter_reason: str | None = None,
-        event_record_id: int | None = None,
+        classification_status: str | None = None,
+        aggregation_status: str | None = None,
+        publish_status: str | None = None,
+        event_id: int | None = None,
         normalized_text: str | None = None,
         event_type: str | None = None,
         event_signal: str | None = None,
         candidate_signature: str | None = None,
     ) -> dict[str, Any] | None:
         candidate_values: dict[str, Any] = {
-            "status": status,
-            "filter_reason": filter_reason,
-            "event_record_id": event_record_id,
+            "classification_status": classification_status,
+            "aggregation_status": aggregation_status,
+            "publish_status": publish_status,
+            "event_id": event_id,
             "normalized_text": normalized_text,
             "event_type": event_type,
             "event_signal": event_signal,
             "candidate_signature": candidate_signature,
+            "filter_reason": filter_reason,
         }
         values = {
             key: value for key, value in candidate_values.items() if value is not None
         }
 
+        if not values:
+            return await self.get_message_by_id(message_id=message_id)
+
         stmt = (
-            sa.update(message_records)
-            .where(message_records.c.id == message_id)
+            sa.update(tg_message)
+            .where(tg_message.c.id == message_id)
             .values(**values)
-            .returning(*message_records.c)
+            .returning(*tg_message.c)
         )
         result = await self._conn.execute(stmt)
         row = result.mappings().first()

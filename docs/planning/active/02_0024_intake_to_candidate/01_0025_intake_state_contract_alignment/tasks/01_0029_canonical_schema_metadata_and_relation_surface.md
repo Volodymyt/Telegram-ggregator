@@ -1,8 +1,8 @@
 # M1 Intake state contract alignment: canonical schema metadata and relation surface
 
 Planning ID: 0029
-Status: Draft
-Last updated: 2026-04-06
+Status: Done
+Last updated: 2026-05-02
 
 ## Goal
 
