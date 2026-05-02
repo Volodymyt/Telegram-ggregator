@@ -13,7 +13,6 @@ from telegram_aggregator.storage.readiness import (
     check_storage_readiness,
     check_db_reachable,
     check_migrations_current,
-    check_schema_queryable,
     ReadinessResult,
 )
 
@@ -36,6 +35,5 @@ __all__ = [
     "check_storage_readiness",
     "check_db_reachable",
     "check_migrations_current",
-    "check_schema_queryable",
     "ReadinessResult",
 ]

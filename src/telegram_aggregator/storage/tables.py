@@ -16,6 +16,8 @@ AGGREGATION_STATUSES = (
     "queued",
     "suppressed_duplicate",
     "selected",
+    "clear_processed",
+    "orphan_clear",
 )
 
 MESSAGE_PUBLISH_STATUSES = (
@@ -48,7 +50,7 @@ event = sa.Table(
     sa.Column("ended_at", sa.DateTime(timezone=True), nullable=True),
     sa.Column("canonical_message_id", sa.BigInteger, nullable=True),
     sa.Column("published_target_message_id", sa.BigInteger, nullable=True),
-    sa.Column("publish_status", sa.Text, nullable=False, server_default="pending"),
+    sa.Column("publish_status", sa.String(32), nullable=False, server_default="pending"),
     sa.Column(
         "created_at",
         sa.DateTime(timezone=True),
@@ -84,9 +86,19 @@ tg_message = sa.Table(
         sa.ForeignKey("event.id", name="fk_tg_message_event_id_event"),
         nullable=True,
     ),
-    sa.Column("classification_status", sa.Text, nullable=False, server_default="pending", ),
-    sa.Column("aggregation_status", sa.Text, nullable=False, server_default="new", ),
-    sa.Column("publish_status", sa.Text, nullable=False, server_default="new", ),
+    sa.Column(
+        "classification_status",
+        sa.String(32),
+        nullable=False,
+        server_default="pending",
+    ),
+    sa.Column(
+        "aggregation_status",
+        sa.String(32),
+        nullable=False,
+        server_default="new",
+    ),
+    sa.Column("publish_status", sa.String(32), nullable=False, server_default="new"),
     sa.Column("filter_reason", sa.Text, nullable=True),
     sa.Column("target_message_id", sa.BigInteger, nullable=True),
     sa.Column("publish_attempts", sa.Integer, nullable=False, server_default="0"),

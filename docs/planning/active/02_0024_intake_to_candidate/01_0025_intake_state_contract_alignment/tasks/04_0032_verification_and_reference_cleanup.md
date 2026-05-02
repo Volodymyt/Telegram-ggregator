@@ -1,8 +1,8 @@
 # M1 Intake state contract alignment: verification and reference cleanup
 
 Planning ID: 0032
-Status: Draft
-Last updated: 2026-04-06
+Status: Done
+Last updated: 2026-05-02
 
 ## Goal
 
