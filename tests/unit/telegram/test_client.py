@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import sqlite3
 from pathlib import Path
@@ -69,12 +68,6 @@ async def test_telegram_client_dry_run_skips_telethon(
             AssertionError("Telethon must not be constructed in dry-run mode")
         ),
     )
-    monkeypatch.setattr(
-        TelegramClient,
-        "_wait_for_shutdown_signal",
-        lambda self: asyncio.sleep(0),
-    )
-
     client = TelegramClient(runtime_config(dry_run=True))
 
     async def _callback(message) -> None:

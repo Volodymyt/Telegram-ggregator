@@ -1,8 +1,8 @@
 # M0 Bootstrap, observability, and test harness: observability and health surface
 
 Planning ID: 0022
-Status: Ready
-Last updated: 2026-03-15
+Status: Done
+Last updated: 2026-05-02
 
 ## Goal
 
